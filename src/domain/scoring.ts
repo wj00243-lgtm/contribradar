@@ -94,6 +94,14 @@ export function scoreRepositoryReadiness(repo: Repository): ScoreResult {
     (metrics.hasChangelog ? 20 : 0) +
     (metrics.hasApiDocs ? 25 : 0) +
     (metrics.hasExamples ? 25 : 0);
+  const ciRaw =
+    metrics.ciPassRate === null
+      ? "CI pass rate unknown"
+      : `CI ${Math.round(metrics.ciPassRate * 100)}%`;
+  const coverageRaw =
+    metrics.testCoveragePercent === null
+      ? "coverage unknown"
+      : `coverage ${metrics.testCoveragePercent}%`;
   const breakdown = [
     component(
       "maintainer_responsiveness",
@@ -114,7 +122,7 @@ export function scoreRepositoryReadiness(repo: Repository): ScoreResult {
       "Code health",
       codeHealthScore,
       REPOSITORY_WEIGHTS.code_health,
-      `${metrics.ciPassRate ?? 0} CI pass rate, ${metrics.testCoveragePercent ?? 0}% coverage`
+      `${ciRaw}, ${coverageRaw}, ${metrics.openCriticalBugs} critical bugs`
     ),
     component(
       "community_activity",

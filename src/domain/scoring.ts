@@ -20,10 +20,7 @@ function clamp(value: number, min = 0, max = 100): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function round(value: number, decimals = 0): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
-}
+const round = (value: number): number => Math.round(value * 100) / 100;
 
 function component(
   key: string,
@@ -32,22 +29,20 @@ function component(
   weight: number,
   raw: string
 ): ScoreComponent {
-  const normalizedScore = round(clamp(score), 1);
+  const normalizedScore = round(clamp(score));
 
   return {
     key,
     label,
     score: normalizedScore,
-    weightedScore: round(normalizedScore * weight, 1),
+    weightedScore: round(clamp(score) * weight),
     weight,
     raw
   };
 }
 
 function totalScore(breakdown: ScoreComponent[]): number {
-  return round(
-    clamp(breakdown.reduce((total, part) => total + part.weightedScore, 0))
-  );
+  return round(breakdown.reduce((total, part) => total + part.weightedScore, 0));
 }
 
 function bestLabelScore(labels: string[]): number {
@@ -151,10 +146,6 @@ export function scoreRepositoryReadiness(repo: Repository): ScoreResult {
     warnings.push("Open critical bugs reduce code health.");
   }
 
-  if (newcomerScore < 50) {
-    warnings.push("Newcomer support signals are limited.");
-  }
-
   const missingMetrics = [
     metrics.maintainerResponseHours,
     metrics.averagePrMergeDays,
@@ -196,8 +187,12 @@ export function scoreIssueReadiness(issue: Issue): ScoreResult {
     warnings.push("Issue appears stale.");
   }
 
-  if (clarityScore < 50) {
-    warnings.push("Issue description is thin.");
+  if (metrics.acceptanceCriteriaCount === 0) {
+    warnings.push("No acceptance criteria detected.");
+  }
+
+  if (metrics.assigneeCount > 0) {
+    warnings.push("Issue already has an assignee.");
   }
 
   return {

@@ -125,7 +125,7 @@ export const seedRepositories: Repository[] = [
       hasIssueTemplates: false,
       hasGoodFirstIssueLabel: false,
       averagePrMergeDays: 28,
-      ciPassRate: 0.52,
+      ciPassRate: null,
       testCoveragePercent: 31,
       openCriticalBugs: 12,
       hasCodeOfConduct: false,

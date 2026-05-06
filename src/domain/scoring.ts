@@ -50,10 +50,6 @@ function totalScore(breakdown: ScoreComponent[]): number {
   );
 }
 
-function confidenceFromScore(score: number): number {
-  return round(clamp(12 - score / 10, 1, 12));
-}
-
 function bestLabelScore(labels: string[]): number {
   const normalizedLabels = labels.map((label) => label.toLowerCase());
 
@@ -85,11 +81,14 @@ export function scoreRepositoryReadiness(repo: Repository): ScoreResult {
     (metrics.averagePrMergeDays !== null && metrics.averagePrMergeDays < 7
       ? 25
       : 0);
-  const criticalBugPoints = clamp(20 - metrics.openCriticalBugs * 5);
   const codeHealthScore =
-    (metrics.ciPassRate ?? 0) * 40 +
-    ((metrics.testCoveragePercent ?? 0) / 100) * 30 +
-    criticalBugPoints +
+    (metrics.ciPassRate ?? 0.35) * 40 +
+    ((metrics.testCoveragePercent ?? 25) / 100) * 30 +
+    (metrics.openCriticalBugs === 0
+      ? 20
+      : metrics.openCriticalBugs <= 1
+        ? 10
+        : 0) +
     (metrics.hasCodeOfConduct ? 10 : 0);
   const communityActivityScore = Math.min(
     100,
@@ -152,9 +151,16 @@ export function scoreRepositoryReadiness(repo: Repository): ScoreResult {
     warnings.push("Newcomer support signals are limited.");
   }
 
+  const missingMetrics = [
+    metrics.maintainerResponseHours,
+    metrics.averagePrMergeDays,
+    metrics.ciPassRate,
+    metrics.testCoveragePercent
+  ].filter((metric) => metric === null).length;
+
   return {
     score,
-    confidence: confidenceFromScore(score),
+    confidence: round(4 + missingMetrics * 3 + warnings.length * 1.5),
     breakdown,
     explanation: `${repo.fullName} scores ${score} because maintainer responsiveness, newcomer signals, code health, activity, and documentation are weighted together.`,
     warnings
@@ -179,8 +185,7 @@ export function scoreIssueReadiness(issue: Issue): ScoreResult {
     component("assignee", "Assignee", assigneeScore, ISSUE_WEIGHTS.assignee, `${metrics.assigneeCount} assignees`),
     component("labels", "Labels", labelScore, ISSUE_WEIGHTS.labels, issue.labels.join(", "))
   ];
-  const weightedScore = totalScore(breakdown);
-  const score = issue.isStale ? Math.min(weightedScore, 39) : weightedScore;
+  const score = totalScore(breakdown);
   const warnings: string[] = [];
 
   if (issue.isStale) {
@@ -193,7 +198,7 @@ export function scoreIssueReadiness(issue: Issue): ScoreResult {
 
   return {
     score,
-    confidence: confidenceFromScore(score),
+    confidence: round(4 + warnings.length * 2),
     breakdown,
     explanation: `Issue #${issue.number} scores ${score} because issue clarity, engagement, recency, assignment, and labels are weighted together.`,
     warnings

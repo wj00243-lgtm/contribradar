@@ -147,6 +147,10 @@ export function scoreRepositoryReadiness(repo: Repository): ScoreResult {
     warnings.push("Documentation signals are weak.");
   }
 
+  if (metrics.openCriticalBugs > 0) {
+    warnings.push("Open critical bugs reduce code health.");
+  }
+
   if (newcomerScore < 50) {
     warnings.push("Newcomer support signals are limited.");
   }

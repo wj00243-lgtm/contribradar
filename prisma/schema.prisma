@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  free
+  pro
+  team
+}
+
+enum IssueState {
+  open
+  closed
+}
+
+enum DigestFrequency {
+  daily
+  weekly
+}
+
+enum AlertType {
+  new_issue
+  score_change
+  stale_reminder
+}
+
+model User {
+  id               String      @id @default(cuid())
+  githubId         String?     @unique
+  email            String?     @unique
+  displayName      String
+  avatarUrl        String?
+  skillVector      Json
+  experienceLevel  String
+  weeklyHours      Int
+  plan             Plan        @default(free)
+  alertPreferences Json
+  createdAt        DateTime    @default(now())
+  watchlists       Watchlist[]
+  alerts           Alert[]
+
+  @@map("users")
+}
+
+model Repository {
+  id                            String          @id @default(cuid())
+  githubId                      Int             @unique
+  fullName                      String          @unique
+  owner                         String
+  name                          String
+  description                   String
+  language                      String
+  topics                        Json
+  stars                         Int
+  forks                         Int
+  openIssues                    Int
+  sizeKb                        Int
+  lastCommitAt                  DateTime
+  createdAt                     DateTime
+  updatedAt                     DateTime
+  readinessScore                Decimal?        @db.Decimal(5, 2)
+  scoreConfidence               Decimal?        @db.Decimal(5, 2)
+  scoreCalculatedAt             DateTime?
+  metricMaintainerResponseHours Decimal?        @db.Decimal(6, 2)
+  metricNewcomerFriendlyScore   Decimal?        @db.Decimal(5, 2)
+  metricCodeHealthScore         Decimal?        @db.Decimal(5, 2)
+  metricCommunityActivityScore  Decimal?        @db.Decimal(5, 2)
+  metricDocumentationScore      Decimal?        @db.Decimal(5, 2)
+  issues                        Issue[]
+  watchlistRepos                WatchlistRepo[]
+  alerts                        Alert[]
+  scoreLogs                     ScoreLog[]
+
+  @@index([readinessScore(sort: Desc)])
+  @@index([language])
+  @@map("repositories")
+}
+
+model Issue {
+  id                    String     @id @default(cuid())
+  repoId                String
+  repository            Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  githubId              Int        @unique
+  number                Int
+  title                 String
+  body                  String
+  state                 IssueState
+  labels                Json
+  assignees             Json
+  createdAt             DateTime
+  updatedAt             DateTime
+  closedAt              DateTime?
+  issueReadinessScore   Decimal?   @db.Decimal(5, 2)
+  hasAcceptanceCriteria Boolean
+  commentCount          Int
+  lastCommentAt         DateTime?
+  firstResponseHours    Decimal?   @db.Decimal(6, 2)
+  isStale               Boolean
+  alerts                Alert[]
+
+  @@index([repoId, state, issueReadinessScore(sort: Desc)])
+  @@index([isStale, lastCommentAt])
+  @@map("issues")
+}
+
+model Watchlist {
+  id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  description     String
+  filters         Json
+  alertEnabled    Boolean         @default(false)
+  digestFrequency DigestFrequency @default(weekly)
+  repos           WatchlistRepo[]
+  createdAt       DateTime        @default(now())
+
+  @@index([userId])
+  @@map("watchlists")
+}
+
+model WatchlistRepo {
+  watchlistId String
+  repoId      String
+  watchlist   Watchlist  @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  repository  Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  addedAt     DateTime   @default(now())
+  notes       String?
+
+  @@id([watchlistId, repoId])
+  @@map("watchlist_repos")
+}
+
+model Alert {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       AlertType
+  repoId     String
+  repository Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  issueId    String?
+  issue      Issue?     @relation(fields: [issueId], references: [id], onDelete: SetNull)
+  message    String
+  reasonText String
+  isRead     Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@map("alerts")
+}
+
+model ScoreLog {
+  id            String     @id @default(cuid())
+  repoId        String
+  repository    Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  calculatedAt  DateTime   @default(now())
+  oldScore      Decimal?   @db.Decimal(5, 2)
+  newScore      Decimal    @db.Decimal(5, 2)
+  deltaReason   Json
+  metricChanges Json
+
+  @@index([repoId, calculatedAt(sort: Desc)])
+  @@map("score_logs")
+}

@@ -17,7 +17,14 @@ const watchlistRequestSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const body = await request.json();
+  let body: unknown;
+
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError(400, "INVALID_JSON", "Request body must be valid JSON.");
+  }
+
   const parsed = watchlistRequestSchema.safeParse(body);
 
   if (!parsed.success) {

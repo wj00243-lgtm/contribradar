@@ -7,13 +7,11 @@ const watchlistRequestSchema = z.object({
   userId: z.string().min(1).default("user_demo"),
   name: z.string(),
   description: z.string().default(""),
-  filters: z
-    .object({
-      languages: z.array(z.string()).default([]),
-      topics: z.array(z.string()).default([]),
-      minScore: z.number().min(0).max(100).default(70)
-    })
-    .default({}),
+  filters: z.object({
+    languages: z.array(z.string()).default([]),
+    topics: z.array(z.string()).default([]),
+    minScore: z.number().min(0).max(100).default(70)
+  }),
   alertEnabled: z.boolean().default(false),
   digestFrequency: z.enum(["daily", "weekly"]).default("weekly")
 });

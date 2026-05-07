@@ -11,16 +11,16 @@ function readDifficulty(value: string | null): Issue["difficulty"] | undefined {
 }
 
 export function GET(request: Request) {
-  const params = new URL(request.url).searchParams;
+  const url = new URL(request.url);
   const result = discoverIssues({
-    repoId: params.get("repo_id") ?? undefined,
-    labels: readStringList(params.get("labels")),
-    minIssueScore: readNumber(params.get("min_issue_score")),
-    isStale: readBoolean(params.get("is_stale")),
-    hasNoAssignee: readBoolean(params.get("has_no_assignee")),
-    difficulty: readDifficulty(params.get("difficulty")),
-    page: readNumber(params.get("page")),
-    limit: readNumber(params.get("limit"))
+    repoId: url.searchParams.get("repo_id") ?? undefined,
+    labels: readStringList(url.searchParams.get("labels")),
+    minIssueScore: readNumber(url.searchParams.get("min_issue_score")),
+    isStale: readBoolean(url.searchParams.get("is_stale")),
+    hasNoAssignee: readBoolean(url.searchParams.get("has_no_assignee")),
+    difficulty: readDifficulty(url.searchParams.get("difficulty")),
+    page: readNumber(url.searchParams.get("page")) ?? 1,
+    limit: readNumber(url.searchParams.get("limit")) ?? 20
   });
 
   return jsonOk({

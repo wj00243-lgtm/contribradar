@@ -9,16 +9,16 @@ function readSort(value: string | null): SortMode {
 }
 
 export function GET(request: Request) {
-  const params = new URL(request.url).searchParams;
+  const url = new URL(request.url);
   const result = discoverRepositories({
-    language: params.get("language") ?? undefined,
-    topics: readStringList(params.get("topics")),
-    minScore: readNumber(params.get("min_score")),
-    hasGoodFirstIssue: readBoolean(params.get("has_good_first_issue")),
-    lastActiveWithinDays: readNumber(params.get("last_active_within_days")),
-    sort: readSort(params.get("sort")),
-    page: readNumber(params.get("page")),
-    limit: readNumber(params.get("limit"))
+    language: url.searchParams.get("language") ?? undefined,
+    topics: readStringList(url.searchParams.get("topics")),
+    minScore: readNumber(url.searchParams.get("min_score")),
+    hasGoodFirstIssue: readBoolean(url.searchParams.get("has_good_first_issue")),
+    lastActiveWithinDays: readNumber(url.searchParams.get("last_active_within_days")),
+    sort: readSort(url.searchParams.get("sort")),
+    page: readNumber(url.searchParams.get("page")) ?? 1,
+    limit: readNumber(url.searchParams.get("limit")) ?? 20
   });
 
   return jsonOk({

@@ -44,7 +44,7 @@ export function readStringList(value: string | null): string[] | undefined {
 }
 
 export function readNumber(value: string | null): number | undefined {
-  if (value === null) {
+  if (!value) {
     return undefined;
   }
 

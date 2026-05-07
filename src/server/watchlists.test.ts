@@ -9,7 +9,7 @@ describe("watchlists", () => {
   it("creates a watchlist with filters and matching repositories", () => {
     const result = createWatchlist({
       userId: "user_demo",
-      name: "Python beginner targets",
+      name: " Python beginner targets ",
       description: "Repos for first OSS contribution",
       filters: {
         languages: ["Python"],
@@ -21,11 +21,29 @@ describe("watchlists", () => {
     });
 
     expect(result.status).toBe(201);
-    expect(result.data?.watchlist.name).toBe("Python beginner targets");
+    expect(result.data).toBeDefined();
 
-    const repos = getWatchlistRepos(result.data?.watchlist.id ?? "");
+    const watchlist = result.data?.watchlist;
+
+    expect(watchlist?.id).toBe("watchlist_1");
+    expect(watchlist?.name).toBe("Python beginner targets");
+    expect(watchlist?.createdAt).toBe("2026-05-06T00:00:00.000Z");
+    expect(watchlist?.repoIds).toContain("repo_pandas");
+
+    const repos = getWatchlistRepos(watchlist?.id ?? "");
     expect(repos.status).toBe(200);
+    expect(repos.data).toBeDefined();
     expect(repos.data?.repos[0].fullName).toBe("pandas-dev/pandas");
+    expect(repos.data?.filters_applied).toEqual({
+      language: watchlist?.filters.languages[0],
+      topics: watchlist?.filters.topics,
+      minScore: watchlist?.filters.minScore,
+      sort: "score",
+      page: 1,
+      limit: 100
+    });
+    expect(repos.data?.repos.map((repo) => repo.id)).toEqual(watchlist?.repoIds);
+    expect(repos.data?.total).toBe(repos.data?.repos.length);
   });
 
   it("rejects blank watchlist names", () => {
@@ -44,5 +62,12 @@ describe("watchlists", () => {
 
     expect(result.status).toBe(400);
     expect(result.error?.code).toBe("INVALID_WATCHLIST_NAME");
+  });
+
+  it("returns not found for missing watchlists", () => {
+    const result = getWatchlistRepos("missing");
+
+    expect(result.status).toBe(404);
+    expect(result.error?.code).toBe("WATCHLIST_NOT_FOUND");
   });
 });

@@ -251,9 +251,12 @@ export function discoverIssues(query: Partial<DiscoverIssuesQuery> = {}): {
 
     return true;
   });
+  const sortedIssues = [...filteredIssues].sort(
+    (left, right) => right.readiness.score - left.readiness.score
+  );
 
   return {
-    issues: paginate(filteredIssues, query.page, query.limit),
+    issues: paginate(sortedIssues, query.page, query.limit),
     total: filteredIssues.length
   };
 }

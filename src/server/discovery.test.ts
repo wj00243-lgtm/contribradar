@@ -48,6 +48,17 @@ describe("getRepositoryScore", () => {
 });
 
 describe("discoverIssues", () => {
+  it("orders issues by readiness score before pagination", () => {
+    const result = discoverIssues({
+      page: 1,
+      limit: 5
+    });
+
+    const scores = result.issues.map((issue) => issue.readiness.score);
+
+    expect(scores).toEqual([...scores].sort((left, right) => right - left));
+  });
+
   it("filters unassigned beginner-friendly issues", () => {
     const result = discoverIssues({
       labels: ["good first issue"],

@@ -7,12 +7,6 @@ const watchlists = new Map<string, Watchlist>();
 
 type CreateWatchlistInput = Omit<Watchlist, "id" | "repoIds" | "createdAt">;
 
-type WatchlistFiltersApplied = Pick<DiscoverReposQuery, "sort" | "page" | "limit"> & {
-  language?: string;
-  topics: string[];
-  minScore: number;
-};
-
 type CreateWatchlistResponse =
   | {
       status: 201;
@@ -37,7 +31,7 @@ type WatchlistReposResponse =
         watchlist: Watchlist;
         repos: RepoWithScore[];
         total: number;
-        filters_applied: WatchlistFiltersApplied;
+        filters_applied: Watchlist["filters"];
       };
       error?: never;
     }
@@ -50,7 +44,7 @@ type WatchlistReposResponse =
       };
     };
 
-function discoveryQueryForWatchlist(watchlist: Pick<Watchlist, "filters">): WatchlistFiltersApplied {
+function discoveryQueryForWatchlist(watchlist: Pick<Watchlist, "filters">): DiscoverReposQuery {
   return {
     language: watchlist.filters.languages[0],
     topics: [...watchlist.filters.topics],
@@ -61,14 +55,18 @@ function discoveryQueryForWatchlist(watchlist: Pick<Watchlist, "filters">): Watc
   };
 }
 
+function cloneWatchlistFilters(filters: Watchlist["filters"]): Watchlist["filters"] {
+  return {
+    languages: [...filters.languages],
+    topics: [...filters.topics],
+    minScore: filters.minScore
+  };
+}
+
 function cloneWatchlist(watchlist: Watchlist): Watchlist {
   return {
     ...watchlist,
-    filters: {
-      languages: [...watchlist.filters.languages],
-      topics: [...watchlist.filters.topics],
-      minScore: watchlist.filters.minScore
-    },
+    filters: cloneWatchlistFilters(watchlist.filters),
     repoIds: [...watchlist.repoIds]
   };
 }
@@ -141,7 +139,7 @@ export function getWatchlistRepos(id: string): WatchlistReposResponse {
       watchlist: cloneWatchlist(watchlist),
       repos,
       total: repos.length,
-      filters_applied: filtersApplied
+      filters_applied: cloneWatchlistFilters(watchlist.filters)
     }
   };
 }

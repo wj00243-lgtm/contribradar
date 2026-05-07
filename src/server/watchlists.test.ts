@@ -34,14 +34,7 @@ describe("watchlists", () => {
     expect(repos.status).toBe(200);
     expect(repos.data).toBeDefined();
     expect(repos.data?.repos[0].fullName).toBe("pandas-dev/pandas");
-    expect(repos.data?.filters_applied).toEqual({
-      language: watchlist?.filters.languages[0],
-      topics: watchlist?.filters.topics,
-      minScore: watchlist?.filters.minScore,
-      sort: "score",
-      page: 1,
-      limit: 100
-    });
+    expect(repos.data?.filters_applied).toEqual(watchlist?.filters);
     expect(repos.data?.repos.map((repo) => repo.id)).toEqual(watchlist?.repoIds);
     expect(repos.data?.total).toBe(repos.data?.repos.length);
   });

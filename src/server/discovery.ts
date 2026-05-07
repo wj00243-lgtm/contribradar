@@ -42,11 +42,19 @@ type RepositoryScoreResponse =
     };
 
 function normalizePage(page?: number): number {
-  return Math.max(1, Math.floor(page ?? 1));
+  if (page === undefined || !Number.isFinite(page)) {
+    return 1;
+  }
+
+  return Math.max(1, Math.floor(page));
 }
 
 function normalizeLimit(limit?: number): number {
-  return Math.min(100, Math.max(1, Math.floor(limit ?? 20)));
+  if (limit === undefined || !Number.isFinite(limit)) {
+    return 20;
+  }
+
+  return Math.min(100, Math.max(1, Math.floor(limit)));
 }
 
 function paginate<T>(items: T[], page?: number, limit?: number): T[] {
@@ -122,10 +130,16 @@ function sortRepositories(repos: RepoWithScore[], sort: SortMode): RepoWithScore
 }
 
 export function toRepoWithScore(repo: Repository): RepoWithScore {
-  return {
+  const clonedRepo = {
     ...repo,
-    readiness: scoreRepositoryReadiness(repo),
-    hasGoodFirstIssue: repositoryHasGoodFirstIssue(repo.id)
+    topics: [...repo.topics],
+    metrics: { ...repo.metrics }
+  };
+
+  return {
+    ...clonedRepo,
+    readiness: scoreRepositoryReadiness(clonedRepo),
+    hasGoodFirstIssue: repositoryHasGoodFirstIssue(clonedRepo.id)
   };
 }
 
@@ -215,9 +229,16 @@ export function discoverIssues(query: Partial<DiscoverIssuesQuery> = {}): {
   total: number;
 } {
   const issues = seedIssues.map((issue: Issue): IssueWithScore => {
-    return {
+    const clonedIssue = {
       ...issue,
-      readiness: scoreIssueReadiness(issue)
+      labels: [...issue.labels],
+      assignees: [...issue.assignees],
+      metrics: { ...issue.metrics }
+    };
+
+    return {
+      ...clonedIssue,
+      readiness: scoreIssueReadiness(clonedIssue)
     };
   });
   const filteredIssues = issues.filter((issue) => {

@@ -28,6 +28,28 @@ describe("discoverRepositories", () => {
 
     expect(result.repos[0].fullName).toBe("pandas-dev/pandas");
   });
+
+  it("defaults non-finite pagination values", () => {
+    const result = discoverRepositories({
+      page: Number.NaN,
+      limit: Number.NaN
+    });
+
+    expect(result.total).toBeGreaterThan(0);
+    expect(result.repos.length).toBeGreaterThan(0);
+  });
+
+  it("returns repository topics without leaking mutations into later calls or facets", () => {
+    const firstResult = discoverRepositories();
+    const originalTopic = firstResult.repos[0].topics[0];
+
+    firstResult.repos[0].topics[0] = "mutated-topic";
+
+    const nextResult = discoverRepositories();
+
+    expect(nextResult.repos[0].topics[0]).toBe(originalTopic);
+    expect(nextResult.facets.topics).not.toContain("mutated-topic");
+  });
 });
 
 describe("getRepositoryScore", () => {
@@ -57,6 +79,27 @@ describe("discoverIssues", () => {
     const scores = result.issues.map((issue) => issue.readiness.score);
 
     expect(scores).toEqual([...scores].sort((left, right) => right - left));
+  });
+
+  it("defaults non-finite pagination values", () => {
+    const result = discoverIssues({
+      page: Number.NaN,
+      limit: Number.NaN
+    });
+
+    expect(result.total).toBeGreaterThan(0);
+    expect(result.issues.length).toBeGreaterThan(0);
+  });
+
+  it("returns issue labels without leaking mutations into later calls", () => {
+    const firstResult = discoverIssues();
+    const originalLabel = firstResult.issues[0].labels[0];
+
+    firstResult.issues[0].labels[0] = "mutated-label";
+
+    const nextResult = discoverIssues();
+
+    expect(nextResult.issues[0].labels[0]).toBe(originalLabel);
   });
 
   it("filters unassigned beginner-friendly issues", () => {

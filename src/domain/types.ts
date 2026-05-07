@@ -22,7 +22,7 @@ export type RepoMetrics = {
 
 export type Repository = {
   id: string;
-  githubId: number;
+  githubId: string;
   fullName: string;
   owner: string;
   name: string;
@@ -51,7 +51,7 @@ export type IssueMetrics = {
 export type Issue = {
   id: string;
   repoId: string;
-  githubId: number;
+  githubId: string;
   number: number;
   title: string;
   body: string;

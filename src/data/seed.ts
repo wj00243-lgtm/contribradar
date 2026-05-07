@@ -3,7 +3,7 @@ import type { Issue, Repository } from "@/domain/types";
 export const seedRepositories: Repository[] = [
   {
     id: "repo_pandas",
-    githubId: 858127,
+    githubId: "858127",
     fullName: "pandas-dev/pandas",
     owner: "pandas-dev",
     name: "pandas",
@@ -37,7 +37,7 @@ export const seedRepositories: Repository[] = [
   },
   {
     id: "repo_tracing",
-    githubId: 131847219,
+    githubId: "131847219",
     fullName: "tokio-rs/tracing",
     owner: "tokio-rs",
     name: "tracing",
@@ -71,7 +71,7 @@ export const seedRepositories: Repository[] = [
   },
   {
     id: "repo_cli",
-    githubId: 761245903,
+    githubId: "761245903",
     fullName: "open-source-labs/termflow",
     owner: "open-source-labs",
     name: "termflow",
@@ -105,7 +105,7 @@ export const seedRepositories: Repository[] = [
   },
   {
     id: "repo_stale",
-    githubId: 44201988,
+    githubId: "44201988",
     fullName: "legacy-js/widgets",
     owner: "legacy-js",
     name: "widgets",
@@ -143,7 +143,7 @@ export const seedIssues: Issue[] = [
   {
     id: "issue_pandas_docs",
     repoId: "repo_pandas",
-    githubId: 22481001,
+    githubId: "22481001",
     number: 58241,
     title: "Clarify timezone examples in the getting started guide",
     body: "The timezone conversion examples should include a short explanation of naive and aware timestamps plus an expected output table.",
@@ -169,7 +169,7 @@ export const seedIssues: Issue[] = [
   {
     id: "issue_pandas_perf",
     repoId: "repo_pandas",
-    githubId: 22481044,
+    githubId: "22481044",
     number: 58257,
     title: "Improve groupby performance for nullable integer keys",
     body: "Large frames with nullable integer groupby keys are slower than comparable object-key workloads. Investigate the factorization path and add a benchmark.",
@@ -195,7 +195,7 @@ export const seedIssues: Issue[] = [
   {
     id: "issue_tracing_metrics",
     repoId: "repo_tracing",
-    githubId: 9912450,
+    githubId: "9912450",
     number: 3268,
     title: "Document metrics layer examples for async services",
     body: "Add a guide showing how tracing subscribers can export request metrics from a small async service example.",
@@ -221,7 +221,7 @@ export const seedIssues: Issue[] = [
   {
     id: "issue_cli_parser",
     repoId: "repo_cli",
-    githubId: 118204,
+    githubId: "118204",
     number: 87,
     title: "Document parser extension points for custom commands",
     body: "The parser supports custom token transforms, but the README does not explain how command authors should register them.",
@@ -247,7 +247,7 @@ export const seedIssues: Issue[] = [
   {
     id: "issue_stale_refactor",
     repoId: "repo_stale",
-    githubId: 730415,
+    githubId: "730415",
     number: 441,
     title: "Refactor widget registry to remove global mutable state",
     body: "The registry is hard to follow and needs refactoring.",

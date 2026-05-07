@@ -49,7 +49,7 @@ model User {
 
 model Repository {
   id                            String          @id @default(cuid())
-  githubId                      Int             @unique
+  githubId                      String          @unique
   fullName                      String          @unique
   owner                         String
   name                          String
@@ -85,7 +85,7 @@ model Issue {
   id                    String     @id @default(cuid())
   repoId                String
   repository            Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
-  githubId              Int        @unique
+  githubId              String     @unique
   number                Int
   title                 String
   body                  String

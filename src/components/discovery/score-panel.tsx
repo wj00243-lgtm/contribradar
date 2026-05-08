@@ -66,7 +66,7 @@ export function ScorePanel({ repo }: ScorePanelProps) {
           <div>
             <dt className="text-zinc-500">CI pass rate</dt>
             <dd className="text-zinc-300">
-              {repo.metrics.ciPassRate === null ? "Unknown" : `${repo.metrics.ciPassRate}%`}
+              {repo.metrics.ciPassRate === null ? "Unknown" : `${Math.round(repo.metrics.ciPassRate * 100)}%`}
             </dd>
           </div>
           <div>

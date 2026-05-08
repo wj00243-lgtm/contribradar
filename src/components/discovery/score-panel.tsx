@@ -23,7 +23,7 @@ export function ScorePanel({ repo }: ScorePanelProps) {
         </div>
         <div className="text-right">
           <p className="text-3xl font-semibold text-emerald-300">{repo.readiness.score}</p>
-          <p className="text-xs text-zinc-500">{repo.readiness.confidence}% confidence</p>
+          <p className="text-xs text-zinc-500">±{repo.readiness.confidence}</p>
         </div>
       </div>
 

@@ -52,7 +52,7 @@ export function RepoList({ repos, selectedRepoId }: RepoListProps) {
                 </div>
                 <div className="text-right">
                   <p className="text-xl font-semibold text-emerald-300">{repo.readiness.score}</p>
-                  <p className="text-xs text-zinc-500">{repo.readiness.confidence}% confidence</p>
+                  <p className="text-xs text-zinc-500">±{repo.readiness.confidence}</p>
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-2 text-xs text-zinc-400">

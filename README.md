@@ -14,6 +14,10 @@ ContribRadar is a contribution intelligence layer for GitHub repositories. This 
 
 ## Local Setup
 
+Prerequisites:
+
+- Node.js with npm installed and available on `PATH`.
+
 Install dependencies:
 
 ```powershell
@@ -28,6 +32,12 @@ npm test
 
 Validate the Prisma schema:
 
+Copy the example environment file and set `DATABASE_URL` to a PostgreSQL connection string first:
+
+```powershell
+Copy-Item .env.example .env
+```
+
 ```powershell
 npm run prisma:validate
 ```
@@ -39,6 +49,12 @@ npm run dev
 ```
 
 Open `http://localhost:3000`.
+
+## Data Sources
+
+The current UI and API discovery flow reads from in-repo seed data in `src/data/seed.ts`. Watchlists are stored in memory for the running process.
+
+PostgreSQL and Prisma are included in this MVP for schema validation and optional seed support, but the local dashboard does not require seeded PostgreSQL data yet.
 
 ## Useful Verification Commands
 
@@ -63,8 +79,8 @@ Included:
 - Deterministic issue readiness scoring.
 - Explainability breakdowns for scoring signals.
 - Basic watchlist APIs.
-- Seed-backed service boundaries for the first product flow.
-- PostgreSQL Prisma schema for core entities.
+- Seed-backed service boundaries for the first product flow using in-repo data.
+- PostgreSQL Prisma schema for core entities and optional seed support.
 - Local UI for browsing discovery results, issues, and score details.
 
 Out of scope:

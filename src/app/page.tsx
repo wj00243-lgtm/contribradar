@@ -1,13 +1,26 @@
+import { DiscoveryDashboard } from "@/components/discovery/discovery-dashboard";
+import { discoverIssues, discoverRepositories } from "@/server/discovery";
+
 export default function HomePage() {
+  const repositoryResults = discoverRepositories({
+    minScore: 50,
+    sort: "score",
+    page: 1,
+    limit: 10
+  });
+  const issueResults = discoverIssues({
+    minIssueScore: 50,
+    hasNoAssignee: true,
+    page: 1,
+    limit: 5
+  });
+
   return (
-    <main className="min-h-screen bg-zinc-950 px-6 py-8 text-zinc-100">
-      <section className="mx-auto max-w-6xl">
-        <p className="text-sm font-medium uppercase tracking-[0.18em] text-emerald-300">ContribRadar</p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-normal text-white">Contribution intelligence dashboard</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-300">
-          Discover contribution-ready repositories, inspect deterministic readiness scores, and save promising targets.
-        </p>
-      </section>
-    </main>
+    <DiscoveryDashboard
+      repos={repositoryResults.repos}
+      total={repositoryResults.total}
+      facets={repositoryResults.facets}
+      issues={issueResults.issues}
+    />
   );
 }

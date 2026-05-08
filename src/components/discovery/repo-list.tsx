@@ -2,6 +2,7 @@ import type { RepoWithScore } from "@/domain/types";
 
 type RepoListProps = {
   repos: RepoWithScore[];
+  onSelectRepo: (repoId: string) => void;
   selectedRepoId?: string;
 };
 
@@ -17,7 +18,7 @@ function formatResponseTime(hours: number | null): string {
   return `${Math.round(hours / 24)}d`;
 }
 
-export function RepoList({ repos, selectedRepoId }: RepoListProps) {
+export function RepoList({ repos, onSelectRepo, selectedRepoId }: RepoListProps) {
   if (repos.length === 0) {
     return (
       <section className="rounded border border-zinc-900 bg-zinc-950 p-5">
@@ -38,12 +39,17 @@ export function RepoList({ repos, selectedRepoId }: RepoListProps) {
           const selected = repo.id === selectedRepoId;
 
           return (
-            <article
+            <button
+              aria-pressed={selected}
               className={[
-                "rounded border bg-zinc-950 p-4",
-                selected ? "border-emerald-500/60" : "border-zinc-900"
+                "block w-full rounded border bg-zinc-950 p-4 text-left transition",
+                selected
+                  ? "border-emerald-500/60 ring-1 ring-emerald-500/40"
+                  : "border-zinc-900 hover:border-zinc-700"
               ].join(" ")}
               key={repo.id}
+              onClick={() => onSelectRepo(repo.id)}
+              type="button"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -67,7 +73,7 @@ export function RepoList({ repos, selectedRepoId }: RepoListProps) {
                   </span>
                 ) : null}
               </div>
-            </article>
+            </button>
           );
         })}
       </div>

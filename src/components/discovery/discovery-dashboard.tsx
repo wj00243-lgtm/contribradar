@@ -1,4 +1,8 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import type { IssueWithScore, RepoWithScore } from "@/domain/types";
+import { filterAndSortRepos, type DiscoveryFilters } from "./discovery-filtering";
 import { FilterSummary } from "./filter-summary";
 import { IssueList } from "./issue-list";
 import { RepoList } from "./repo-list";
@@ -16,12 +20,26 @@ type DiscoveryDashboardProps = {
 };
 
 export function DiscoveryDashboard({ repos, total, facets, issues }: DiscoveryDashboardProps) {
-  const selectedRepo = repos[0];
+  const [filters, setFilters] = useState<DiscoveryFilters>({
+    language: "",
+    minScore: 50,
+    sort: "score",
+    goodFirstOnly: false
+  });
+  const [selectedRepoId, setSelectedRepoId] = useState(repos[0]?.id);
+  const visibleRepos = useMemo(() => filterAndSortRepos(repos, filters), [filters, repos]);
+  const selectedRepo = visibleRepos.find((repo) => repo.id === selectedRepoId) ?? visibleRepos[0];
   const averageScore =
-    repos.length === 0
+    visibleRepos.length === 0
       ? 0
-      : Math.round(repos.reduce((sum, repo) => sum + repo.readiness.score, 0) / repos.length);
-  const goodFirstIssueCount = repos.filter((repo) => repo.hasGoodFirstIssue).length;
+      : Math.round(visibleRepos.reduce((sum, repo) => sum + repo.readiness.score, 0) / visibleRepos.length);
+  const goodFirstIssueCount = visibleRepos.filter((repo) => repo.hasGoodFirstIssue).length;
+
+  useEffect(() => {
+    if (selectedRepo?.id !== selectedRepoId) {
+      setSelectedRepoId(selectedRepo?.id);
+    }
+  }, [selectedRepo?.id, selectedRepoId]);
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -57,17 +75,122 @@ export function DiscoveryDashboard({ repos, total, facets, issues }: DiscoveryDa
 
       <div className="mx-auto grid max-w-7xl gap-6 px-6 py-6 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-6">
-          <RepoList repos={repos} selectedRepoId={selectedRepo?.id} />
+          <DiscoveryControls
+            facets={facets}
+            filters={filters}
+            onFiltersChange={setFilters}
+            resultCount={visibleRepos.length}
+            totalLoaded={repos.length}
+          />
+          <RepoList repos={visibleRepos} selectedRepoId={selectedRepo?.id} onSelectRepo={setSelectedRepoId} />
           <IssueList issues={issues} />
         </div>
         <div className="space-y-6">
-          <ScorePanel repo={selectedRepo} />
+          {selectedRepo === undefined ? null : <ScorePanel repo={selectedRepo} />}
           <WatchlistPanel
-            filters={{ languages: [], topics: [], minScore: 50 }}
-            initialRepoCount={repos.length}
+            filters={{
+              languages: filters.language === "" ? [] : [filters.language],
+              topics: [],
+              minScore: filters.minScore
+            }}
+            initialRepoCount={visibleRepos.length}
           />
         </div>
       </div>
     </main>
+  );
+}
+
+type DiscoveryControlsProps = {
+  facets: DiscoveryDashboardProps["facets"];
+  filters: DiscoveryFilters;
+  onFiltersChange: (filters: DiscoveryFilters) => void;
+  resultCount: number;
+  totalLoaded: number;
+};
+
+function DiscoveryControls({
+  facets,
+  filters,
+  onFiltersChange,
+  resultCount,
+  totalLoaded
+}: DiscoveryControlsProps) {
+  function updateFilters(nextFilters: Partial<DiscoveryFilters>) {
+    onFiltersChange({ ...filters, ...nextFilters });
+  }
+
+  return (
+    <section className="rounded border border-zinc-900 bg-zinc-950 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-white">Discovery filters</h2>
+          <p className="mt-1 text-xs text-zinc-500">
+            Filtering {resultCount} of {totalLoaded} loaded repositories.
+          </p>
+        </div>
+        <button
+          className="rounded border border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-zinc-700 hover:text-white"
+          onClick={() => updateFilters({ language: "", minScore: 50, sort: "score", goodFirstOnly: false })}
+          type="button"
+        >
+          Reset
+        </button>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-4">
+        <label className="block text-xs font-medium text-zinc-400">
+          Language
+          <select
+            className="mt-2 w-full rounded border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none transition focus:border-emerald-500"
+            onChange={(event) => updateFilters({ language: event.target.value })}
+            value={filters.language}
+          >
+            <option value="">All languages</option>
+            {facets.languages.map((language) => (
+              <option key={language} value={language}>
+                {language}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block text-xs font-medium text-zinc-400">
+          Minimum score
+          <input
+            className="mt-2 w-full rounded border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none transition focus:border-emerald-500"
+            max={100}
+            min={0}
+            onChange={(event) => updateFilters({ minScore: Number(event.target.value) })}
+            type="number"
+            value={filters.minScore}
+          />
+        </label>
+
+        <label className="block text-xs font-medium text-zinc-400">
+          Sort
+          <select
+            className="mt-2 w-full rounded border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none transition focus:border-emerald-500"
+            onChange={(event) => updateFilters({ sort: event.target.value as DiscoveryFilters["sort"] })}
+            value={filters.sort}
+          >
+            <option value="score">Score</option>
+            <option value="stars">Stars</option>
+            <option value="activity">Activity</option>
+            <option value="response_time">Response time</option>
+          </select>
+        </label>
+
+        <label className="flex min-h-16 items-center gap-3 rounded border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-300">
+          <input
+            checked={filters.goodFirstOnly}
+            className="h-4 w-4 accent-emerald-400"
+            onChange={(event) => updateFilters({ goodFirstOnly: event.target.checked })}
+            type="checkbox"
+          />
+          Good first issue only
+        </label>
+      </div>
+    </section>
   );
 }

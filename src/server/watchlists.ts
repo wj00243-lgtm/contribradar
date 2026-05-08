@@ -44,15 +44,36 @@ type WatchlistReposResponse =
       };
     };
 
-function discoveryQueryForWatchlist(watchlist: Pick<Watchlist, "filters">): DiscoverReposQuery {
+function baseDiscoveryQueryForWatchlist(
+  watchlist: Pick<Watchlist, "filters">
+): Omit<DiscoverReposQuery, "language"> {
   return {
-    language: watchlist.filters.languages[0],
     topics: [...watchlist.filters.topics],
     minScore: watchlist.filters.minScore,
     sort: "score",
     page: 1,
     limit: 100
   };
+}
+
+function discoverWatchlistRepos(watchlist: Pick<Watchlist, "filters">): RepoWithScore[] {
+  const query = baseDiscoveryQueryForWatchlist(watchlist);
+
+  if (watchlist.filters.languages.length === 0) {
+    return discoverRepositories(query).repos;
+  }
+
+  const reposById = new Map<string, RepoWithScore>();
+
+  for (const language of watchlist.filters.languages) {
+    for (const repo of discoverRepositories({ ...query, language }).repos) {
+      reposById.set(repo.id, repo);
+    }
+  }
+
+  return [...reposById.values()].sort(
+    (left, right) => right.readiness.score - left.readiness.score
+  );
 }
 
 function cloneWatchlistFilters(filters: Watchlist["filters"]): Watchlist["filters"] {
@@ -89,9 +110,7 @@ export function createWatchlist(input: CreateWatchlistInput): CreateWatchlistRes
     topics: [...input.filters.topics],
     minScore: input.filters.minScore
   };
-  const repoIds = discoverRepositories(discoveryQueryForWatchlist({ filters })).repos.map(
-    (repo) => repo.id
-  );
+  const repoIds = discoverWatchlistRepos({ filters }).map((repo) => repo.id);
   const watchlist: Watchlist = {
     id: `watchlist_${watchlists.size + 1}`,
     userId: input.userId,
@@ -127,9 +146,8 @@ export function getWatchlistRepos(id: string): WatchlistReposResponse {
     };
   }
 
-  const filtersApplied = discoveryQueryForWatchlist(watchlist);
   const watchlistRepoIds = new Set(watchlist.repoIds);
-  const repos = discoverRepositories(filtersApplied).repos.filter((repo) =>
+  const repos = discoverWatchlistRepos(watchlist).filter((repo) =>
     watchlistRepoIds.has(repo.id)
   );
 

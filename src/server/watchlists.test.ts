@@ -39,6 +39,37 @@ describe("watchlists", () => {
     expect(repos.data?.total).toBe(repos.data?.repos.length);
   });
 
+  it("applies multiple language filters with OR semantics", () => {
+    const result = createWatchlist({
+      userId: "user_demo",
+      name: "Python and Rust beginner targets",
+      description: "Repos across preferred languages",
+      filters: {
+        languages: ["Python", "Rust"],
+        topics: [],
+        minScore: 70
+      },
+      alertEnabled: true,
+      digestFrequency: "weekly"
+    });
+
+    expect(result.status).toBe(201);
+    expect(result.data).toBeDefined();
+
+    const watchlist = result.data?.watchlist;
+
+    expect(watchlist?.filters.languages).toEqual(["Python", "Rust"]);
+    expect(watchlist?.repoIds).toEqual(expect.arrayContaining(["repo_pandas", "repo_tracing"]));
+
+    const repos = getWatchlistRepos(watchlist?.id ?? "");
+    const repoIds = repos.data?.repos.map((repo) => repo.id) ?? [];
+
+    expect(repos.status).toBe(200);
+    expect(repos.data?.filters_applied.languages).toEqual(["Python", "Rust"]);
+    expect(repoIds).toEqual(expect.arrayContaining(["repo_pandas", "repo_tracing"]));
+    expect(repoIds).toEqual(watchlist?.repoIds);
+  });
+
   it("rejects blank watchlist names", () => {
     const result = createWatchlist({
       userId: "user_demo",

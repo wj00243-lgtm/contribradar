@@ -125,6 +125,7 @@ export type Watchlist = {
     languages: string[];
     topics: string[];
     minScore: number;
+    hasGoodFirstIssue: boolean;
   };
   alertEnabled: boolean;
   digestFrequency: "daily" | "weekly";

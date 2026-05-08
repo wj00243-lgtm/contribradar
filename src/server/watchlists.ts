@@ -5,7 +5,11 @@ const CREATED_AT = "2026-05-06T00:00:00.000Z";
 
 const watchlists = new Map<string, Watchlist>();
 
-type CreateWatchlistInput = Omit<Watchlist, "id" | "repoIds" | "createdAt">;
+type CreateWatchlistInput = Omit<Watchlist, "id" | "repoIds" | "createdAt" | "filters"> & {
+  filters: Omit<Watchlist["filters"], "hasGoodFirstIssue"> & {
+    hasGoodFirstIssue?: boolean;
+  };
+};
 
 type CreateWatchlistResponse =
   | {
@@ -50,6 +54,7 @@ function baseDiscoveryQueryForWatchlist(
   return {
     topics: [...watchlist.filters.topics],
     minScore: watchlist.filters.minScore,
+    hasGoodFirstIssue: watchlist.filters.hasGoodFirstIssue ? true : undefined,
     sort: "score",
     page: 1,
     limit: 100
@@ -80,7 +85,8 @@ function cloneWatchlistFilters(filters: Watchlist["filters"]): Watchlist["filter
   return {
     languages: [...filters.languages],
     topics: [...filters.topics],
-    minScore: filters.minScore
+    minScore: filters.minScore,
+    hasGoodFirstIssue: filters.hasGoodFirstIssue
   };
 }
 
@@ -108,7 +114,8 @@ export function createWatchlist(input: CreateWatchlistInput): CreateWatchlistRes
   const filters = {
     languages: [...input.filters.languages],
     topics: [...input.filters.topics],
-    minScore: input.filters.minScore
+    minScore: input.filters.minScore,
+    hasGoodFirstIssue: input.filters.hasGoodFirstIssue ?? false
   };
   const repoIds = discoverWatchlistRepos({ filters }).map((repo) => repo.id);
   const watchlist: Watchlist = {

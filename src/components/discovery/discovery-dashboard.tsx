@@ -91,7 +91,8 @@ export function DiscoveryDashboard({ repos, total, facets, issues }: DiscoveryDa
             filters={{
               languages: filters.language === "" ? [] : [filters.language],
               topics: [],
-              minScore: filters.minScore
+              minScore: filters.minScore,
+              hasGoodFirstIssue: filters.goodFirstOnly
             }}
             initialRepoCount={visibleRepos.length}
           />

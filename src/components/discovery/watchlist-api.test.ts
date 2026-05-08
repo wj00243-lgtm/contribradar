@@ -10,7 +10,8 @@ describe("buildWatchlistRequest", () => {
         filters: {
           languages: [],
           topics: [],
-          minScore: 50
+          minScore: 50,
+          hasGoodFirstIssue: true
         }
       })
     ).toEqual({
@@ -20,7 +21,8 @@ describe("buildWatchlistRequest", () => {
       filters: {
         languages: [],
         topics: [],
-        minScore: 50
+        minScore: 50,
+        hasGoodFirstIssue: true
       },
       alertEnabled: false,
       digestFrequency: "weekly"

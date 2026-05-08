@@ -70,6 +70,37 @@ describe("watchlists", () => {
     expect(repoIds).toEqual(watchlist?.repoIds);
   });
 
+  it("applies good first issue filters when creating and reading repositories", () => {
+    const result = createWatchlist({
+      userId: "user_demo",
+      name: "Good first only",
+      description: "Repos with starter issues",
+      filters: {
+        languages: [],
+        topics: [],
+        minScore: 0,
+        hasGoodFirstIssue: true
+      },
+      alertEnabled: false,
+      digestFrequency: "weekly"
+    });
+
+    expect(result.status).toBe(201);
+
+    const watchlist = result.data?.watchlist;
+    expect(watchlist?.filters.hasGoodFirstIssue).toBe(true);
+    expect(watchlist?.repoIds.length).toBeGreaterThan(0);
+
+    const repos = getWatchlistRepos(watchlist?.id ?? "");
+    const savedRepos = repos.data?.repos ?? [];
+
+    expect(repos.status).toBe(200);
+    expect(repos.data?.filters_applied).toEqual(watchlist?.filters);
+    expect(savedRepos.length).toBe(watchlist?.repoIds.length);
+    expect(savedRepos.every((repo) => repo.hasGoodFirstIssue)).toBe(true);
+    expect(savedRepos.map((repo) => repo.id)).toEqual(watchlist?.repoIds);
+  });
+
   it("rejects blank watchlist names", () => {
     const result = createWatchlist({
       userId: "user_demo",

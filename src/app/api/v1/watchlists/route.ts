@@ -10,7 +10,8 @@ const watchlistRequestSchema = z.object({
   filters: z.object({
     languages: z.array(z.string()).default([]),
     topics: z.array(z.string()).default([]),
-    minScore: z.number().min(0).max(100).default(70)
+    minScore: z.number().min(0).max(100).default(70),
+    hasGoodFirstIssue: z.boolean().default(false)
   }),
   alertEnabled: z.boolean().default(false),
   digestFrequency: z.enum(["daily", "weekly"]).default("weekly")

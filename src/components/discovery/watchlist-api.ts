@@ -2,6 +2,7 @@ export type WatchlistFilters = {
   languages: string[];
   topics: string[];
   minScore: number;
+  hasGoodFirstIssue: boolean;
 };
 
 export type WatchlistRequest = {
@@ -26,7 +27,8 @@ export function buildWatchlistRequest({ name, filters }: BuildWatchlistRequestIn
     filters: {
       languages: [...filters.languages],
       topics: [...filters.topics],
-      minScore: filters.minScore
+      minScore: filters.minScore,
+      hasGoodFirstIssue: filters.hasGoodFirstIssue
     },
     alertEnabled: false,
     digestFrequency: "weekly"

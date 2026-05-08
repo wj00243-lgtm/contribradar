@@ -1,26 +1,50 @@
 import type { Issue } from "@/domain/types";
 import { discoverIssues } from "@/server/discovery";
-import { jsonOk, readBoolean, readNumber, readStringList } from "@/server/http";
+import {
+  hasQueryFieldErrors,
+  jsonError,
+  jsonOk,
+  queryValidationDetails,
+  readQueryBoolean,
+  readQueryEnum,
+  readQueryNumber,
+  readStringList,
+  type QueryFieldErrors
+} from "@/server/http";
 
 const difficulties = new Set<Issue["difficulty"]>(["easy", "medium", "hard"]);
 
-function readDifficulty(value: string | null): Issue["difficulty"] | undefined {
-  return value !== null && difficulties.has(value as Issue["difficulty"])
-    ? (value as Issue["difficulty"])
-    : undefined;
-}
-
 export function GET(request: Request) {
   const url = new URL(request.url);
+  const errors: QueryFieldErrors = {};
+  const minIssueScore = readQueryNumber(url.searchParams, "min_issue_score", errors, {
+    min: 0,
+    max: 100
+  });
+  const isStale = readQueryBoolean(url.searchParams, "is_stale", errors);
+  const hasNoAssignee = readQueryBoolean(url.searchParams, "has_no_assignee", errors);
+  const difficulty = readQueryEnum(url.searchParams, "difficulty", difficulties, errors);
+  const page = readQueryNumber(url.searchParams, "page", errors, { min: 1 });
+  const limit = readQueryNumber(url.searchParams, "limit", errors, { min: 1, max: 100 });
+
+  if (hasQueryFieldErrors(errors)) {
+    return jsonError(
+      400,
+      "INVALID_DISCOVERY_FILTERS",
+      "Discovery filters are invalid.",
+      queryValidationDetails(errors)
+    );
+  }
+
   const result = discoverIssues({
     repoId: url.searchParams.get("repo_id") ?? undefined,
     labels: readStringList(url.searchParams.get("labels")),
-    minIssueScore: readNumber(url.searchParams.get("min_issue_score")),
-    isStale: readBoolean(url.searchParams.get("is_stale")),
-    hasNoAssignee: readBoolean(url.searchParams.get("has_no_assignee")),
-    difficulty: readDifficulty(url.searchParams.get("difficulty")),
-    page: readNumber(url.searchParams.get("page")) ?? 1,
-    limit: readNumber(url.searchParams.get("limit")) ?? 20
+    minIssueScore,
+    isStale,
+    hasNoAssignee,
+    difficulty,
+    page: page ?? 1,
+    limit: limit ?? 20
   });
 
   return jsonOk({

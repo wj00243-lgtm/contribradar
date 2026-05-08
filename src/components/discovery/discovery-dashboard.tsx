@@ -3,6 +3,7 @@ import { FilterSummary } from "./filter-summary";
 import { IssueList } from "./issue-list";
 import { RepoList } from "./repo-list";
 import { ScorePanel } from "./score-panel";
+import { WatchlistPanel } from "./watchlist-panel";
 
 type DiscoveryDashboardProps = {
   repos: RepoWithScore[];
@@ -59,7 +60,13 @@ export function DiscoveryDashboard({ repos, total, facets, issues }: DiscoveryDa
           <RepoList repos={repos} selectedRepoId={selectedRepo?.id} />
           <IssueList issues={issues} />
         </div>
-        <ScorePanel repo={selectedRepo} />
+        <div className="space-y-6">
+          <ScorePanel repo={selectedRepo} />
+          <WatchlistPanel
+            filters={{ languages: [], topics: [], minScore: 50 }}
+            initialRepoCount={repos.length}
+          />
+        </div>
       </div>
     </main>
   );

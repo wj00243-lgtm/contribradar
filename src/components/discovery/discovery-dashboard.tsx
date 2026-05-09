@@ -8,6 +8,7 @@ import { IssueList } from "./issue-list";
 import { RepoList } from "./repo-list";
 import { ScorePanel } from "./score-panel";
 import { WatchlistPanel } from "./watchlist-panel";
+import { AiRecommendationsPanel } from "@/components/recommendations/ai-recommendations-panel";
 
 type DiscoveryDashboardProps = {
   repos: RepoWithScore[];
@@ -17,9 +18,10 @@ type DiscoveryDashboardProps = {
     topics: string[];
   };
   issues: IssueWithScore[];
+  userPlan?: string | null;
 };
 
-export function DiscoveryDashboard({ repos, total, facets, issues }: DiscoveryDashboardProps) {
+export function DiscoveryDashboard({ repos, total, facets, issues, userPlan }: DiscoveryDashboardProps) {
   const [filters, setFilters] = useState<DiscoveryFilters>({
     language: "",
     minScore: 50,
@@ -86,6 +88,7 @@ export function DiscoveryDashboard({ repos, total, facets, issues }: DiscoveryDa
           <IssueList issues={issues} />
         </div>
         <div className="space-y-6">
+          <AiRecommendationsPanel userPlan={userPlan} />
           {selectedRepo === undefined ? null : <ScorePanel repo={selectedRepo} />}
           <WatchlistPanel
             filters={{

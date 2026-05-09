@@ -1,8 +1,10 @@
 import { AuthButtons } from "@/components/auth/auth-buttons";
 import { DiscoveryDashboard } from "@/components/discovery/discovery-dashboard";
+import { auth } from "@/auth";
 import { discoverIssues, discoverRepositories } from "@/server/discovery";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await auth();
   const repositoryResults = discoverRepositories({
     minScore: 50,
     sort: "score",
@@ -26,6 +28,7 @@ export default function HomePage() {
         total={repositoryResults.total}
         facets={repositoryResults.facets}
         issues={issueResults.issues}
+        userPlan={session?.user?.plan}
       />
     </>
   );

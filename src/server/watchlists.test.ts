@@ -125,4 +125,59 @@ describe("watchlists", () => {
     expect(result.status).toBe(404);
     expect(result.error?.code).toBe("WATCHLIST_NOT_FOUND");
   });
+
+  it("limits free users to three watchlists", () => {
+    for (const index of [1, 2, 3]) {
+      expect(
+        createWatchlist({
+          userId: "user_demo",
+          userPlan: "free",
+          name: `List ${index}`,
+          description: "",
+          filters: { languages: [], topics: [], minScore: 0 },
+          alertEnabled: false,
+          digestFrequency: "weekly"
+        }).status
+      ).toBe(201);
+    }
+
+    const result = createWatchlist({
+      userId: "user_demo",
+      userPlan: "free",
+      name: "List 4",
+      description: "",
+      filters: { languages: [], topics: [], minScore: 0 },
+      alertEnabled: false,
+      digestFrequency: "weekly"
+    });
+
+    expect(result.status).toBe(403);
+    expect(result.error?.code).toBe("FREE_WATCHLIST_LIMIT_REACHED");
+  });
+
+  it("caps free watchlists at twenty repositories but leaves pro uncapped", () => {
+    const freeResult = createWatchlist({
+      userId: "free_user",
+      userPlan: "free",
+      name: "Free list",
+      description: "",
+      filters: { languages: [], topics: [], minScore: 0 },
+      alertEnabled: false,
+      digestFrequency: "weekly",
+      candidateRepoIds: Array.from({ length: 25 }, (_, index) => `repo_${index}`)
+    });
+    const proResult = createWatchlist({
+      userId: "pro_user",
+      userPlan: "pro",
+      name: "Pro list",
+      description: "",
+      filters: { languages: [], topics: [], minScore: 0 },
+      alertEnabled: false,
+      digestFrequency: "weekly",
+      candidateRepoIds: Array.from({ length: 25 }, (_, index) => `repo_${index}`)
+    });
+
+    expect(freeResult.data?.watchlist.repoIds).toHaveLength(20);
+    expect(proResult.data?.watchlist.repoIds).toHaveLength(25);
+  });
 });

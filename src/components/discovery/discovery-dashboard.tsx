@@ -9,6 +9,7 @@ import { FilterSummary } from "./filter-summary";
 import { IssueList } from "./issue-list";
 import { RepoList } from "./repo-list";
 import { ScorePanel } from "./score-panel";
+import { ScoreTrendPanel } from "./score-trend-panel";
 import { WatchlistPanel } from "./watchlist-panel";
 import { AiRecommendationsPanel } from "@/components/recommendations/ai-recommendations-panel";
 import { RepoComparison } from "./repo-comparison";
@@ -114,6 +115,7 @@ export function DiscoveryDashboard({ repos, total, facets, issues, userPlan }: D
           <NotificationCenter userPlan={userPlan} />
           <AiRecommendationsPanel userPlan={userPlan} />
           {selectedRepo === undefined ? null : <ScorePanel repo={selectedRepo} />}
+          {selectedRepo === undefined ? null : <ScoreTrendPanel repo={selectedRepo} userPlan={userPlan} />}
           <WatchlistPanel
             filters={{
               languages: filters.language === "" ? [] : [filters.language],

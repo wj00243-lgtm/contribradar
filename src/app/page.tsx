@@ -1,3 +1,4 @@
+import { AuthButtons } from "@/components/auth/auth-buttons";
 import { DiscoveryDashboard } from "@/components/discovery/discovery-dashboard";
 import { discoverIssues, discoverRepositories } from "@/server/discovery";
 
@@ -16,11 +17,16 @@ export default function HomePage() {
   });
 
   return (
-    <DiscoveryDashboard
-      repos={repositoryResults.repos}
-      total={repositoryResults.total}
-      facets={repositoryResults.facets}
-      issues={issueResults.issues}
-    />
+    <>
+      <div className="fixed right-4 top-4 z-40">
+        <AuthButtons />
+      </div>
+      <DiscoveryDashboard
+        repos={repositoryResults.repos}
+        total={repositoryResults.total}
+        facets={repositoryResults.facets}
+        issues={issueResults.issues}
+      />
+    </>
   );
 }

@@ -6,6 +6,9 @@ const prisma = new PrismaClient();
 
 async function main() {
   await prisma.alert.deleteMany();
+  await prisma.usageLog.deleteMany();
+  await prisma.userSettings.deleteMany();
+  await prisma.contribution.deleteMany();
   await prisma.watchlistRepo.deleteMany();
   await prisma.watchlist.deleteMany();
   await prisma.issue.deleteMany();
@@ -24,6 +27,19 @@ async function main() {
       weeklyHours: 5,
       plan: "free",
       alertPreferences: { quietMode: false }
+    }
+  });
+
+  await prisma.userSettings.create({
+    data: {
+      userId: user.id,
+      alertPreferences: {
+        email: false,
+        slack: false,
+        digest: "weekly"
+      },
+      aiQuota: 20,
+      maxAlerts: 10
     }
   });
 
@@ -106,6 +122,20 @@ async function main() {
           notes: "Strong docs and fast maintainer response."
         }
       }
+    }
+  });
+
+  await prisma.contribution.create({
+    data: {
+      userId: user.id,
+      repoId: "repo_pandas",
+      issueId: "issue_pandas_docs",
+      type: "issue_comment",
+      status: "open",
+      githubUrl: "https://github.com/pandas-dev/pandas/issues/1001#issuecomment-1",
+      openedAt: new Date("2026-04-20T10:00:00.000Z"),
+      impactScore: 64,
+      isFirstContribution: true
     }
   });
 }

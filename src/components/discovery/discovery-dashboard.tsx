@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { IssueWithScore, RepoWithScore } from "@/domain/types";
+import { NotificationCenter } from "@/components/alerts/notification-center";
 import { filterAndSortRepos, type DiscoveryFilters } from "./discovery-filtering";
 import { FilterSummary } from "./filter-summary";
 import { IssueList } from "./issue-list";
@@ -88,6 +89,7 @@ export function DiscoveryDashboard({ repos, total, facets, issues, userPlan }: D
           <IssueList issues={issues} />
         </div>
         <div className="space-y-6">
+          <NotificationCenter userPlan={userPlan} />
           <AiRecommendationsPanel userPlan={userPlan} />
           {selectedRepo === undefined ? null : <ScorePanel repo={selectedRepo} />}
           <WatchlistPanel

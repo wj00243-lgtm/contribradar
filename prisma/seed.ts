@@ -58,6 +58,8 @@ async function main() {
         stars: repo.stars,
         forks: repo.forks,
         openIssues: repo.openIssues,
+        license: repo.license,
+        contributorCount: repo.contributorCount,
         sizeKb: repo.sizeKb,
         lastCommitAt: repo.lastCommitAt,
         createdAt: repo.createdAt,

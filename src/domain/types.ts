@@ -32,6 +32,8 @@ export type Repository = {
   stars: number;
   forks: number;
   openIssues: number;
+  license: string;
+  contributorCount: number;
   sizeKb: number;
   lastCommitAt: string;
   createdAt: string;
@@ -100,6 +102,9 @@ export type DiscoverReposQuery = {
   minScore?: number;
   hasGoodFirstIssue?: boolean;
   lastActiveWithinDays?: number;
+  license?: string;
+  minContributors?: number;
+  maxContributors?: number;
   sort: SortMode;
   page: number;
   limit: number;

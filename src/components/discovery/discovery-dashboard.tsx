@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { IssueWithScore, RepoWithScore } from "@/domain/types";
 import { NotificationCenter } from "@/components/alerts/notification-center";
+import { ProGate } from "@/components/pro/pro-gate";
 import { filterAndSortRepos, type DiscoveryFilters } from "./discovery-filtering";
 import { FilterSummary } from "./filter-summary";
 import { IssueList } from "./issue-list";
@@ -10,6 +11,7 @@ import { RepoList } from "./repo-list";
 import { ScorePanel } from "./score-panel";
 import { WatchlistPanel } from "./watchlist-panel";
 import { AiRecommendationsPanel } from "@/components/recommendations/ai-recommendations-panel";
+import { RepoComparison } from "./repo-comparison";
 
 type DiscoveryDashboardProps = {
   repos: RepoWithScore[];
@@ -27,11 +29,20 @@ export function DiscoveryDashboard({ repos, total, facets, issues, userPlan }: D
     language: "",
     minScore: 50,
     sort: "score",
-    goodFirstOnly: false
+    goodFirstOnly: false,
+    license: "",
+    lastCommitWithinDays: "",
+    minContributors: "",
+    maxContributors: ""
   });
   const [selectedRepoId, setSelectedRepoId] = useState(repos[0]?.id);
+  const [comparisonRepoIds, setComparisonRepoIds] = useState<string[]>([]);
   const visibleRepos = useMemo(() => filterAndSortRepos(repos, filters), [filters, repos]);
   const selectedRepo = visibleRepos.find((repo) => repo.id === selectedRepoId) ?? visibleRepos[0];
+  const comparisonRepos = comparisonRepoIds
+    .map((repoId) => repos.find((repo) => repo.id === repoId))
+    .filter((repo): repo is RepoWithScore => repo !== undefined);
+  const licenses = useMemo(() => [...new Set(repos.map((repo) => repo.license))].sort(), [repos]);
   const averageScore =
     visibleRepos.length === 0
       ? 0
@@ -81,14 +92,25 @@ export function DiscoveryDashboard({ repos, total, facets, issues, userPlan }: D
           <DiscoveryControls
             facets={facets}
             filters={filters}
+            licenses={licenses}
             onFiltersChange={setFilters}
             resultCount={visibleRepos.length}
             totalLoaded={repos.length}
+            userPlan={userPlan}
+          />
+          <ComparisonPicker
+            comparisonRepoIds={comparisonRepoIds}
+            onComparisonRepoIdsChange={setComparisonRepoIds}
+            repos={visibleRepos}
+            userPlan={userPlan}
           />
           <RepoList repos={visibleRepos} selectedRepoId={selectedRepo?.id} onSelectRepo={setSelectedRepoId} />
           <IssueList issues={issues} />
         </div>
         <div className="space-y-6">
+          <ProGate featureName="repoComparison" userPlan={userPlan}>
+            <RepoComparison repos={comparisonRepos} />
+          </ProGate>
           <NotificationCenter userPlan={userPlan} />
           <AiRecommendationsPanel userPlan={userPlan} />
           {selectedRepo === undefined ? null : <ScorePanel repo={selectedRepo} />}
@@ -110,17 +132,21 @@ export function DiscoveryDashboard({ repos, total, facets, issues, userPlan }: D
 type DiscoveryControlsProps = {
   facets: DiscoveryDashboardProps["facets"];
   filters: DiscoveryFilters;
+  licenses: string[];
   onFiltersChange: (filters: DiscoveryFilters) => void;
   resultCount: number;
   totalLoaded: number;
+  userPlan?: string | null;
 };
 
 function DiscoveryControls({
   facets,
   filters,
+  licenses,
   onFiltersChange,
   resultCount,
-  totalLoaded
+  totalLoaded,
+  userPlan
 }: DiscoveryControlsProps) {
   function updateFilters(nextFilters: Partial<DiscoveryFilters>) {
     onFiltersChange({ ...filters, ...nextFilters });
@@ -137,7 +163,18 @@ function DiscoveryControls({
         </div>
         <button
           className="rounded border border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-zinc-700 hover:text-white"
-          onClick={() => updateFilters({ language: "", minScore: 50, sort: "score", goodFirstOnly: false })}
+          onClick={() =>
+            updateFilters({
+              language: "",
+              minScore: 50,
+              sort: "score",
+              goodFirstOnly: false,
+              license: "",
+              lastCommitWithinDays: "",
+              minContributors: "",
+              maxContributors: ""
+            })
+          }
           type="button"
         >
           Reset
@@ -197,6 +234,125 @@ function DiscoveryControls({
           Good first issue only
         </label>
       </div>
+
+      <ProGate featureName="repoComparison" userPlan={userPlan}>
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          <label className="block text-xs font-medium text-zinc-400">
+            License
+            <select
+              className="mt-2 w-full rounded border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none transition focus:border-emerald-500"
+              onChange={(event) => updateFilters({ license: event.target.value })}
+              value={filters.license}
+            >
+              <option value="">All licenses</option>
+              {licenses.map((license) => (
+                <option key={license} value={license}>
+                  {license}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <NumberFilter
+            label="Last commit within"
+            onChange={(value) => updateFilters({ lastCommitWithinDays: value })}
+            suffix="days"
+            value={filters.lastCommitWithinDays}
+          />
+          <NumberFilter
+            label="Min contributors"
+            onChange={(value) => updateFilters({ minContributors: value })}
+            value={filters.minContributors}
+          />
+          <NumberFilter
+            label="Max contributors"
+            onChange={(value) => updateFilters({ maxContributors: value })}
+            value={filters.maxContributors}
+          />
+        </div>
+      </ProGate>
     </section>
+  );
+}
+
+function NumberFilter({
+  label,
+  onChange,
+  suffix,
+  value
+}: {
+  label: string;
+  onChange: (value: number | "") => void;
+  suffix?: string;
+  value: number | "";
+}) {
+  return (
+    <label className="block text-xs font-medium text-zinc-400">
+      {label}
+      <div className="mt-2 flex rounded border border-zinc-800 bg-zinc-900 focus-within:border-emerald-500">
+        <input
+          className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-white outline-none"
+          min={0}
+          onChange={(event) => onChange(event.target.value === "" ? "" : Number(event.target.value))}
+          type="number"
+          value={value}
+        />
+        {suffix ? <span className="px-3 py-2 text-sm text-zinc-500">{suffix}</span> : null}
+      </div>
+    </label>
+  );
+}
+
+function ComparisonPicker({
+  comparisonRepoIds,
+  onComparisonRepoIdsChange,
+  repos,
+  userPlan
+}: {
+  comparisonRepoIds: string[];
+  onComparisonRepoIdsChange: (repoIds: string[]) => void;
+  repos: RepoWithScore[];
+  userPlan?: string | null;
+}) {
+  function toggleRepo(repoId: string) {
+    if (comparisonRepoIds.includes(repoId)) {
+      onComparisonRepoIdsChange(comparisonRepoIds.filter((id) => id !== repoId));
+      return;
+    }
+
+    onComparisonRepoIdsChange([...comparisonRepoIds, repoId].slice(-3));
+  }
+
+  return (
+    <ProGate featureName="repoComparison" userPlan={userPlan}>
+      <section className="rounded border border-zinc-900 bg-zinc-950 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Compare repositories</h2>
+            <p className="mt-1 text-xs text-zinc-500">Select 2-3 repositories from the current results.</p>
+          </div>
+          <button
+            className="rounded border border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-zinc-700 hover:text-white"
+            onClick={() => onComparisonRepoIdsChange([])}
+            type="button"
+          >
+            Clear
+          </button>
+        </div>
+        <div className="mt-4 grid gap-2 md:grid-cols-2">
+          {repos.slice(0, 8).map((repo) => (
+            <label key={repo.id} className="flex items-center gap-3 rounded border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-300">
+              <input
+                checked={comparisonRepoIds.includes(repo.id)}
+                className="h-4 w-4 accent-emerald-400"
+                onChange={() => toggleRepo(repo.id)}
+                type="checkbox"
+              />
+              <span className="min-w-0 truncate">{repo.fullName}</span>
+            </label>
+          ))}
+        </div>
+      </section>
+    </ProGate>
   );
 }

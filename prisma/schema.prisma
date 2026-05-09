@@ -75,6 +75,8 @@ model Repository {
   stars                         Int
   forks                         Int
   openIssues                    Int
+  license                       String          @default("unknown")
+  contributorCount              Int             @default(0)
   sizeKb                        Int
   lastCommitAt                  DateTime
   createdAt                     DateTime

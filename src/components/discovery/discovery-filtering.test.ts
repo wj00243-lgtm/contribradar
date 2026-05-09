@@ -15,6 +15,8 @@ function repo(overrides: Partial<RepoWithScore>): RepoWithScore {
     stars: overrides.stars ?? 0,
     forks: overrides.forks ?? 0,
     openIssues: overrides.openIssues ?? 0,
+    license: overrides.license ?? "MIT",
+    contributorCount: overrides.contributorCount ?? 10,
     sizeKb: overrides.sizeKb ?? 0,
     lastCommitAt: overrides.lastCommitAt ?? "2026-01-01T00:00:00.000Z",
     createdAt: overrides.createdAt ?? "2025-01-01T00:00:00.000Z",
@@ -53,7 +55,11 @@ describe("filterAndSortRepos", () => {
       language: "Python",
       minScore: 70,
       sort: "score",
-      goodFirstOnly: true
+      goodFirstOnly: true,
+      license: "",
+      lastCommitWithinDays: "",
+      minContributors: "",
+      maxContributors: ""
     };
 
     const result = filterAndSortRepos(
@@ -69,6 +75,59 @@ describe("filterAndSortRepos", () => {
     expect(result.map((item) => item.id)).toEqual(["match"]);
   });
 
+  it("filters by license, recent commit window, and contributor range", () => {
+    const repos = [
+      repo({
+        id: "match",
+        license: "MIT",
+        contributorCount: 24,
+        lastCommitAt: "2026-05-01T00:00:00.000Z",
+        readiness: { score: 91 } as RepoWithScore["readiness"]
+      }),
+      repo({
+        id: "wrong-license",
+        license: "Apache-2.0",
+        contributorCount: 24,
+        lastCommitAt: "2026-05-01T00:00:00.000Z",
+        readiness: { score: 91 } as RepoWithScore["readiness"]
+      }),
+      repo({
+        id: "too-old",
+        license: "MIT",
+        contributorCount: 24,
+        lastCommitAt: "2026-03-01T00:00:00.000Z",
+        readiness: { score: 91 } as RepoWithScore["readiness"]
+      }),
+      repo({
+        id: "too-small",
+        license: "MIT",
+        contributorCount: 3,
+        lastCommitAt: "2026-05-01T00:00:00.000Z",
+        readiness: { score: 91 } as RepoWithScore["readiness"]
+      }),
+      repo({
+        id: "too-large",
+        license: "MIT",
+        contributorCount: 80,
+        lastCommitAt: "2026-05-01T00:00:00.000Z",
+        readiness: { score: 91 } as RepoWithScore["readiness"]
+      })
+    ];
+
+    const result = filterAndSortRepos(repos, {
+      language: "",
+      minScore: 0,
+      sort: "score",
+      goodFirstOnly: false,
+      license: "MIT",
+      lastCommitWithinDays: 14,
+      minContributors: 10,
+      maxContributors: 50
+    });
+
+    expect(result.map((item) => item.id)).toEqual(["match"]);
+  });
+
   it("sorts by stars, activity, and response time", () => {
     const repos = [
       repo({ id: "slow", stars: 50, metrics: { maintainerResponseHours: 72, commitsPerDay: 0.5 } as RepoWithScore["metrics"] }),
@@ -76,17 +135,28 @@ describe("filterAndSortRepos", () => {
       repo({ id: "unknown", stars: 100, metrics: { maintainerResponseHours: null, commitsPerDay: 3 } as RepoWithScore["metrics"] })
     ];
 
-    expect(filterAndSortRepos(repos, { language: "", minScore: 0, sort: "stars", goodFirstOnly: false }).map((item) => item.id)).toEqual([
+    const baseFilters: DiscoveryFilters = {
+      language: "",
+      minScore: 0,
+      sort: "score",
+      goodFirstOnly: false,
+      license: "",
+      lastCommitWithinDays: "",
+      minContributors: "",
+      maxContributors: ""
+    };
+
+    expect(filterAndSortRepos(repos, { ...baseFilters, sort: "stars" }).map((item) => item.id)).toEqual([
       "unknown",
       "slow",
       "fast"
     ]);
-    expect(filterAndSortRepos(repos, { language: "", minScore: 0, sort: "activity", goodFirstOnly: false }).map((item) => item.id)).toEqual([
+    expect(filterAndSortRepos(repos, { ...baseFilters, sort: "activity" }).map((item) => item.id)).toEqual([
       "unknown",
       "fast",
       "slow"
     ]);
-    expect(filterAndSortRepos(repos, { language: "", minScore: 0, sort: "response_time", goodFirstOnly: false }).map((item) => item.id)).toEqual([
+    expect(filterAndSortRepos(repos, { ...baseFilters, sort: "response_time" }).map((item) => item.id)).toEqual([
       "fast",
       "slow",
       "unknown"

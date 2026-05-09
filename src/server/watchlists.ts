@@ -1,11 +1,15 @@
-import type { DiscoverReposQuery, RepoWithScore, Watchlist } from "@/domain/types";
+import type { DiscoverReposQuery, Plan, RepoWithScore, Watchlist } from "@/domain/types";
 import { discoverRepositories } from "./discovery";
 
 const CREATED_AT = "2026-05-06T00:00:00.000Z";
+const FREE_WATCHLIST_LIMIT = 3;
+const FREE_REPO_LIMIT = 20;
 
 const watchlists = new Map<string, Watchlist>();
 
 type CreateWatchlistInput = Omit<Watchlist, "id" | "repoIds" | "createdAt" | "filters"> & {
+  userPlan?: Plan;
+  candidateRepoIds?: string[];
   filters: Omit<Watchlist["filters"], "hasGoodFirstIssue"> & {
     hasGoodFirstIssue?: boolean;
   };
@@ -24,6 +28,14 @@ type CreateWatchlistResponse =
       data?: never;
       error: {
         code: "INVALID_WATCHLIST_NAME";
+        message: string;
+      };
+    }
+  | {
+      status: 403;
+      data?: never;
+      error: {
+        code: "FREE_WATCHLIST_LIMIT_REACHED";
         message: string;
       };
     };
@@ -111,13 +123,26 @@ export function createWatchlist(input: CreateWatchlistInput): CreateWatchlistRes
     };
   }
 
+  const userPlan = input.userPlan ?? "free";
+
+  if (userPlan === "free" && countUserWatchlists(input.userId) >= FREE_WATCHLIST_LIMIT) {
+    return {
+      status: 403,
+      error: {
+        code: "FREE_WATCHLIST_LIMIT_REACHED",
+        message: "Free users can create up to 3 watchlists."
+      }
+    };
+  }
+
   const filters = {
     languages: [...input.filters.languages],
     topics: [...input.filters.topics],
     minScore: input.filters.minScore,
     hasGoodFirstIssue: input.filters.hasGoodFirstIssue ?? false
   };
-  const repoIds = discoverWatchlistRepos({ filters }).map((repo) => repo.id);
+  const discoveredRepoIds = input.candidateRepoIds ?? discoverWatchlistRepos({ filters }).map((repo) => repo.id);
+  const repoIds = userPlan === "free" ? discoveredRepoIds.slice(0, FREE_REPO_LIMIT) : discoveredRepoIds;
   const watchlist: Watchlist = {
     id: `watchlist_${watchlists.size + 1}`,
     userId: input.userId,
@@ -138,6 +163,10 @@ export function createWatchlist(input: CreateWatchlistInput): CreateWatchlistRes
       watchlist: cloneWatchlist(watchlist)
     }
   };
+}
+
+function countUserWatchlists(userId: string): number {
+  return [...watchlists.values()].filter((watchlist) => watchlist.userId === userId).length;
 }
 
 export function getWatchlistRepos(id: string): WatchlistReposResponse {

@@ -5,6 +5,7 @@ import { jsonError, jsonOk } from "@/server/http";
 
 const watchlistRequestSchema = z.object({
   userId: z.string().min(1).default("user_demo"),
+  userPlan: z.enum(["free", "pro", "team"]).default("free"),
   name: z.string(),
   description: z.string().default(""),
   filters: z.object({

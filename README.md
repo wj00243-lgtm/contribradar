@@ -1,6 +1,6 @@
-# ContribRadar Core MVP
+# ContribRadar
 
-ContribRadar is a contribution intelligence layer for GitHub repositories. This MVP focuses on deterministic readiness scoring, explainable repository discovery, issue discovery, and basic watchlist APIs.
+ContribRadar is a contribution intelligence layer for GitHub repositories. It helps contributors discover high-readiness repositories, track watchlists, generate Pro AI recommendations, and monitor smart contribution alerts.
 
 ## Stack
 
@@ -11,6 +11,8 @@ ContribRadar is a contribution intelligence layer for GitHub repositories. This 
 - Vitest
 - Prisma with PostgreSQL provider
 - Zod
+- Auth.js v5 with GitHub OAuth
+- shadcn/ui-compatible components
 
 ## Local Setup
 
@@ -27,7 +29,7 @@ npm install
 Run the test suite:
 
 ```powershell
-npm test
+bun test
 ```
 
 Validate the Prisma schema:
@@ -39,38 +41,70 @@ Copy-Item .env.example .env
 ```
 
 ```powershell
-npm run prisma:validate
+bunx prisma validate
 ```
 
 Run the local development server:
 
 ```powershell
-npm run dev
+bun run dev
 ```
 
 Open `http://localhost:3000`.
 
+## Environment
+
+Copy the example environment file and fill in the values:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Required for production:
+
+- `DATABASE_URL`
+- `AUTH_SECRET`
+- `AUTH_URL`
+- `AUTH_GITHUB_ID`
+- `AUTH_GITHUB_SECRET`
+
+Required for AI recommendations:
+
+- `OPENAI_API_KEY`
+
+Validate required production variables:
+
+```powershell
+bun run qa:env
+```
+
 ## Data Sources
 
-The current UI and API discovery flow reads from in-repo seed data in `src/data/seed.ts`. Watchlists are stored in memory for the running process.
+The current UI and API discovery flow still reads repository discovery data from in-repo seed data in `src/data/seed.ts`. Watchlists are stored in memory for the running process.
 
-PostgreSQL and Prisma are included in this MVP for schema validation and optional seed support, but the local dashboard does not require seeded PostgreSQL data yet.
+PostgreSQL and Prisma provide the production schema for users, alerts, usage logs, settings, contributions, repositories, issues, and score logs.
 
 ## Useful Verification Commands
 
 Run type checking:
 
 ```powershell
-npm run typecheck
+bun run typecheck
 ```
 
 Build the app:
 
 ```powershell
-npm run build
+bun run build
 ```
 
-## MVP Scope
+Production readiness checklist:
+
+```text
+docs/qa/sprint-3-production-readiness.md
+```
+
+## Current Scope
 
 Included:
 
@@ -78,17 +112,23 @@ Included:
 - Deterministic repository readiness scoring.
 - Deterministic issue readiness scoring.
 - Explainability breakdowns for scoring signals.
-- Basic watchlist APIs.
+- Watchlist APIs with Free/Pro limits.
+- GitHub OAuth foundation.
+- Pro feature gates.
+- AI recommendations with monthly usage tracking.
+- Smart alerts and notification center.
+- Advanced discovery comparison and filters.
+- Score trend API and panel.
 - Seed-backed service boundaries for the first product flow using in-repo data.
-- PostgreSQL Prisma schema for core entities and optional seed support.
+- PostgreSQL Prisma schema for core and Pro entities.
 - Local UI for browsing discovery results, issues, and score details.
 
 Out of scope:
 
-- Billing and plan enforcement.
+- Billing checkout.
 - Team dashboards and organization workflows.
-- AI recommendations.
-- Live GitHub sync or OAuth.
-- Slack, Discord, email, and webhook alert delivery.
+- Live GitHub repository sync.
+- Slack, Discord, email, and webhook delivery.
+- Background alert scheduler.
 - Bounty and hackathon modules.
 - Public API key management.

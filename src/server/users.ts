@@ -17,8 +17,8 @@ export type UserRecord = {
 
 export type UserClient = {
   user: {
-    findFirst: (args: unknown) => Promise<UserRecord | null>;
-    create: (args: unknown) => Promise<UserRecord>;
+    findFirst: (args: any) => Promise<UserRecord | null>;
+    create: (args: any) => Promise<UserRecord>;
   };
 };
 

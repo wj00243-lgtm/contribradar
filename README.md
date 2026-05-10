@@ -72,6 +72,13 @@ Required for AI recommendations:
 
 - `OPENAI_API_KEY`
 
+Required for delivery integrations:
+
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `SLACK_WEBHOOK_URL`
+- `CRON_SECRET`
+
 Validate required production variables:
 
 ```powershell
@@ -85,6 +92,13 @@ Production API routes use Prisma-backed persistence for repository and issue dis
 Issue discovery and watchlist API routes are DB-first only. Watchlist create/read routes require an Auth.js session and derive ownership from `session.user.id`; request body `userId` values are ignored and anonymous watchlist creation returns `401`.
 
 PostgreSQL and Prisma provide the production schema for users, alerts, usage logs, settings, contributions, repositories, issues, and score logs.
+
+Alert delivery:
+
+- `GET /api/cron/deliver-alerts` is the scheduler entrypoint for DB-backed smart alert delivery.
+- When `CRON_SECRET` is set, callers must send `Authorization: Bearer <CRON_SECRET>`.
+- Email delivery uses Resend when `UserSettings.alertPreferences.email` is true.
+- Slack delivery uses the configured webhook when `UserSettings.alertPreferences.slack` is true.
 
 Persistence mode:
 
@@ -137,6 +151,8 @@ Included:
 - Pro feature gates.
 - AI recommendations with monthly usage tracking.
 - Smart alerts and notification center.
+- Resend email and Slack webhook delivery for smart alerts.
+- Scheduler entrypoint for DB-backed alert delivery.
 - Advanced discovery comparison and filters.
 - Score trend API and panel.
 - Seed-backed service boundaries for the first product flow using in-repo data.
@@ -148,7 +164,5 @@ Out of scope:
 - Billing checkout.
 - Team dashboards and organization workflows.
 - Live GitHub repository sync.
-- Slack, Discord, email, and webhook delivery.
-- Background alert scheduler.
 - Bounty and hackathon modules.
 - Public API key management.

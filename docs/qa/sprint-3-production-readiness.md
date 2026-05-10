@@ -37,6 +37,13 @@ Required for AI recommendations:
 
 - `OPENAI_API_KEY`
 
+Required for alert delivery:
+
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `SLACK_WEBHOOK_URL`
+- `CRON_SECRET`
+
 Recommended manual checks:
 
 - `AUTH_URL` exactly matches the deployed app origin.
@@ -69,6 +76,9 @@ Smoke checks:
 - Issue discovery API returns DB rows and does not use seed fallback.
 - Anonymous watchlist create/read API calls return `401 AUTH_REQUIRED`.
 - Watchlist ownership is derived from `session.user.id`, not request body `userId`.
+- Alert delivery cron uses DB-backed alerts and does not use seed fallback.
+- Users with `UserSettings.alertPreferences.email=true` receive Resend email delivery when configured.
+- Users with `UserSettings.alertPreferences.slack=true` receive Slack webhook delivery when configured.
 - Development/test seed fallback is not used in production.
 
 ## Persistence Cutover Checklist
@@ -81,6 +91,8 @@ Smoke checks:
 - Call `GET /api/v1/discover/issues` and confirm results come from the database.
 - Create a watchlist while authenticated and confirm rows exist in `watchlists` and `watchlist_repos`.
 - Call watchlist create/read routes without a session and confirm `401 AUTH_REQUIRED`.
+- Call `GET /api/cron/deliver-alerts` with an invalid bearer token and confirm `401 CRON_UNAUTHORIZED`.
+- Call `GET /api/cron/deliver-alerts` with the correct bearer token and confirm delivery attempts are reported.
 - Restart the app and confirm the created watchlist is still available.
 
 ## Manual Product Smoke
@@ -108,6 +120,9 @@ Smoke checks:
 - Confirm new alerts appear.
 - Mark an unread alert read.
 - Confirm unread count decreases.
+- Enable email and Slack alert preferences in `user_settings`.
+- Trigger the delivery cron with `CRON_SECRET`.
+- Confirm Resend and Slack attempts are reported by the cron response.
 
 ### Advanced Discovery
 
@@ -137,7 +152,4 @@ Smoke checks:
 
 ## Known Follow-Ups
 
-- Add real email delivery via Resend.
-- Add Slack webhook delivery.
-- Add scheduler or cron automation for alert checks.
 - Add deployment provider-specific environment and migration instructions.

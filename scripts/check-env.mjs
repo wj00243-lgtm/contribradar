@@ -1,5 +1,5 @@
 const required = ["DATABASE_URL", "AUTH_SECRET", "AUTH_URL", "AUTH_GITHUB_ID", "AUTH_GITHUB_SECRET"];
-const optional = ["OPENAI_API_KEY"];
+const optional = ["OPENAI_API_KEY", "RESEND_API_KEY", "RESEND_FROM_EMAIL", "SLACK_WEBHOOK_URL", "CRON_SECRET"];
 
 const missing = required.filter((name) => !process.env[name]);
 const missingOptional = optional.filter((name) => !process.env[name]);

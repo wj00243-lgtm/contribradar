@@ -80,9 +80,27 @@ bun run qa:env
 
 ## Data Sources
 
-The current UI and API discovery flow still reads repository discovery data from in-repo seed data in `src/data/seed.ts`. Watchlists are stored in memory for the running process.
+Production API routes use Prisma-backed persistence for repository discovery and watchlist CRUD. Development and test runs may fall back to in-repo seed data in `src/data/seed.ts` so the UI remains usable without a local database.
 
 PostgreSQL and Prisma provide the production schema for users, alerts, usage logs, settings, contributions, repositories, issues, and score logs.
+
+Persistence mode:
+
+- `NODE_ENV=production`: database-backed services only.
+- non-production: database-backed services with seed fallback where needed.
+
+Production migration:
+
+```powershell
+bunx prisma migrate deploy
+bunx prisma generate
+```
+
+Optional staging seed:
+
+```powershell
+bunx tsx prisma/seed.ts
+```
 
 ## Useful Verification Commands
 

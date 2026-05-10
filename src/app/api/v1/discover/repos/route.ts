@@ -1,4 +1,5 @@
 import { discoverRepositories } from "@/server/discovery";
+import { discoverRepositoriesFromDb } from "@/server/discovery-db";
 import {
   hasQueryFieldErrors,
   jsonError,
@@ -10,11 +11,13 @@ import {
   readStringList,
   type QueryFieldErrors
 } from "@/server/http";
+import { shouldAllowSeedFallback } from "@/server/persistence-mode";
+import { prisma } from "@/server/db";
 import type { SortMode } from "@/domain/types";
 
 const sortModes = new Set<SortMode>(["score", "stars", "activity", "response_time"]);
 
-export function GET(request: Request) {
+export async function GET(request: Request) {
   const url = new URL(request.url);
   const errors: QueryFieldErrors = {};
   const minScore = readQueryNumber(url.searchParams, "min_score", errors, { min: 0, max: 100 });
@@ -42,7 +45,7 @@ export function GET(request: Request) {
     );
   }
 
-  const result = discoverRepositories({
+  const query = {
     language: url.searchParams.get("language") ?? undefined,
     topics: readStringList(url.searchParams.get("topics")),
     minScore,
@@ -51,7 +54,12 @@ export function GET(request: Request) {
     sort: sort ?? "score",
     page: page ?? 1,
     limit: limit ?? 20
-  });
+  };
+  const dbResult = await discoverRepositoriesFromDb(prisma, query).catch(() => null);
+  const result =
+    dbResult && (dbResult.total > 0 || !shouldAllowSeedFallback())
+      ? dbResult
+      : discoverRepositories(query);
 
   return jsonOk({
     repos: result.repos,

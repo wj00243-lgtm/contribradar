@@ -64,6 +64,19 @@ Smoke checks:
 - Repository rows exist.
 - Demo user exists only in staging/local environments.
 - `usage_logs`, `user_settings`, `contributions`, `alerts`, and `score_logs` tables exist.
+- Watchlists persist through `watchlists` and `watchlist_repos`.
+- Repository discovery APIs return DB rows in production.
+- Development/test seed fallback is not used in production.
+
+## Persistence Cutover Checklist
+
+- Run `bunx prisma migrate deploy`.
+- Run `bunx prisma generate`.
+- Import or seed initial repository, issue, and score log data.
+- Confirm `NODE_ENV=production` is set in the deployment environment.
+- Call `GET /api/v1/discover/repos` and confirm results come from the database.
+- Create a watchlist and confirm rows exist in `watchlists` and `watchlist_repos`.
+- Restart the app and confirm the created watchlist is still available.
 
 ## Manual Product Smoke
 

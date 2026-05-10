@@ -1,5 +1,5 @@
-import type { DiscoverReposQuery, RepoWithScore, ScoreComponent, SortMode } from "@/domain/types";
-import { mapRepositoryRecord } from "./repository-mappers";
+import type { DiscoverIssuesQuery, DiscoverReposQuery, IssueWithScore, RepoWithScore, ScoreComponent, SortMode } from "@/domain/types";
+import { mapIssueRecord, mapRepositoryRecord } from "./repository-mappers";
 
 const FIXED_NOW = new Date("2026-05-06T00:00:00.000Z");
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -9,6 +9,13 @@ type RepositoryClient = {
     findMany?: (args?: any) => Promise<unknown[]>;
     count?: (args?: any) => Promise<number>;
     findFirst?: (args?: any) => Promise<unknown | null>;
+  };
+};
+
+type IssueClient = {
+  issue: {
+    findMany?: (args?: any) => Promise<unknown[]>;
+    count?: (args?: any) => Promise<number>;
   };
 };
 
@@ -119,6 +126,29 @@ export async function getRepositoryScoreFromDb(
   };
 }
 
+export async function discoverIssuesFromDb(
+  client: IssueClient,
+  query: Partial<DiscoverIssuesQuery> = {}
+): Promise<{ issues: IssueWithScore[]; total: number }> {
+  const page = normalizePage(query.page);
+  const limit = normalizeLimit(query.limit);
+  const where = issueWhere(query);
+  const [records, total] = await Promise.all([
+    client.issue.findMany?.({
+      where,
+      orderBy: { issueReadinessScore: "desc" },
+      skip: (page - 1) * limit,
+      take: limit
+    }) ?? Promise.resolve([]),
+    client.issue.count?.({ where }) ?? Promise.resolve(0)
+  ]);
+
+  return {
+    issues: records.map((record) => mapIssueRecord(record as Parameters<typeof mapIssueRecord>[0])),
+    total
+  };
+}
+
 function repositoryWhere(query: Partial<DiscoverReposQuery>) {
   const where: Record<string, unknown> = {};
 
@@ -144,6 +174,42 @@ function repositoryWhere(query: Partial<DiscoverReposQuery>) {
     where.issues = query.hasGoodFirstIssue
       ? { some: { state: "open", labels: { array_contains: "good first issue" } } }
       : { none: { state: "open", labels: { array_contains: "good first issue" } } };
+  }
+
+  return where;
+}
+
+function issueWhere(query: Partial<DiscoverIssuesQuery>) {
+  const where: Record<string, unknown> = {};
+
+  if (query.repoId) {
+    where.repoId = query.repoId;
+  }
+
+  if (query.labels && query.labels.length > 0) {
+    where.AND = query.labels.map((label) => ({ labels: { array_contains: label } }));
+  }
+
+  if (query.minIssueScore !== undefined) {
+    where.issueReadinessScore = { gte: query.minIssueScore };
+  }
+
+  if (query.isStale !== undefined) {
+    where.isStale = query.isStale;
+  }
+
+  if (query.hasNoAssignee !== undefined) {
+    where.assignees = query.hasNoAssignee ? { equals: [] } : { not: [] };
+  }
+
+  if (query.difficulty !== undefined) {
+    const scoreRange =
+      query.difficulty === "easy"
+        ? { gte: 80 }
+        : query.difficulty === "medium"
+          ? { gte: 60, lt: 80 }
+          : { lt: 60 };
+    where.issueReadinessScore = { ...(where.issueReadinessScore as Record<string, unknown> | undefined), ...scoreRange };
   }
 
   return where;

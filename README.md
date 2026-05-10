@@ -80,14 +80,16 @@ bun run qa:env
 
 ## Data Sources
 
-Production API routes use Prisma-backed persistence for repository discovery and watchlist CRUD. Development and test runs may fall back to in-repo seed data in `src/data/seed.ts` so the UI remains usable without a local database.
+Production API routes use Prisma-backed persistence for repository and issue discovery, watchlist CRUD, alerts, usage, and score trends. Development and test runs may still use in-repo seed data in `src/data/seed.ts` for legacy repository browsing flows that need a database-free UI.
+
+Issue discovery and watchlist API routes are DB-first only. Watchlist create/read routes require an Auth.js session and derive ownership from `session.user.id`; request body `userId` values are ignored and anonymous watchlist creation returns `401`.
 
 PostgreSQL and Prisma provide the production schema for users, alerts, usage logs, settings, contributions, repositories, issues, and score logs.
 
 Persistence mode:
 
 - `NODE_ENV=production`: database-backed services only.
-- non-production: database-backed services with seed fallback where needed.
+- non-production: database-backed services with seed fallback only for legacy browsing paths where explicitly retained.
 
 Production migration:
 

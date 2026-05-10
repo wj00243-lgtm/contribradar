@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { discoverRepositoriesFromDb, getRepositoryScoreFromDb } from "./discovery-db";
+import { discoverIssuesFromDb, discoverRepositoriesFromDb, getRepositoryScoreFromDb } from "./discovery-db";
 
 function repository(overrides = {}) {
   return {
@@ -88,5 +88,55 @@ describe("getRepositoryScoreFromDb", () => {
       status: 404,
       error: { code: "REPOSITORY_NOT_FOUND" }
     });
+  });
+});
+
+describe("discoverIssuesFromDb", () => {
+  it("queries Prisma with issue filters and maps issue results", async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        id: "issue_1",
+        repoId: "repo_1",
+        githubId: "456",
+        number: 12,
+        title: "Improve docs",
+        body: "Add a detailed docs example.",
+        state: "open",
+        labels: ["documentation"],
+        assignees: [],
+        createdAt: new Date("2026-05-01T00:00:00Z"),
+        updatedAt: new Date("2026-05-02T00:00:00Z"),
+        closedAt: null,
+        issueReadinessScore: 91,
+        hasAcceptanceCriteria: true,
+        commentCount: 3,
+        lastCommentAt: new Date("2026-05-03T00:00:00Z"),
+        firstResponseHours: 4,
+        isStale: false
+      }
+    ]);
+    const count = vi.fn().mockResolvedValue(1);
+    const client = {
+      issue: {
+        findMany,
+        count
+      }
+    };
+
+    const result = await discoverIssuesFromDb(client, {
+      repoId: "repo_1",
+      labels: ["documentation"],
+      minIssueScore: 80,
+      isStale: false,
+      hasNoAssignee: true,
+      difficulty: "easy",
+      page: 1,
+      limit: 10
+    });
+
+    expect(result.total).toBe(1);
+    expect(result.issues[0].id).toBe("issue_1");
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 10, skip: 0 }));
+    expect(count).toHaveBeenCalledOnce();
   });
 });

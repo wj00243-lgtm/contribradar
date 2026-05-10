@@ -32,6 +32,7 @@ describe("createResendEmailAdapter", () => {
     await expect(adapter.send(payload)).resolves.toEqual({ status: "sent", providerId: "email_123" });
     expect(fetch).toHaveBeenCalledWith("https://api.resend.com/emails", {
       method: "POST",
+      signal: expect.any(AbortSignal),
       headers: {
         Authorization: "Bearer resend_key",
         "Content-Type": "application/json"

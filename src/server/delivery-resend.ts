@@ -10,12 +10,14 @@ type FetchLike = (url: string, init: RequestInit) => Promise<{
 type ResendEmailAdapterOptions = {
   apiKey?: string;
   from?: string;
+  timeoutMs?: number;
   fetch?: FetchLike;
 };
 
 export function createResendEmailAdapter({
   apiKey,
   from,
+  timeoutMs = 10_000,
   fetch: fetchImpl = fetch as FetchLike
 }: ResendEmailAdapterOptions): DeliveryAdapter {
   return {
@@ -37,6 +39,7 @@ export function createResendEmailAdapter({
 
       const response = await fetchImpl("https://api.resend.com/emails", {
         method: "POST",
+        signal: AbortSignal.timeout(timeoutMs),
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json"

@@ -31,6 +31,7 @@ describe("generateJsonWithOpenAi", () => {
       "https://api.openai.com/v1/chat/completions",
       expect.objectContaining({
         method: "POST",
+        signal: expect.any(AbortSignal),
         headers: {
           Authorization: "Bearer test-key",
           "Content-Type": "application/json"
@@ -41,6 +42,22 @@ describe("generateJsonWithOpenAi", () => {
     const body = JSON.parse(fetcher.mock.calls[0][1].body);
     expect(body.model).toBe("gpt-4o-mini");
     expect(body.response_format).toEqual({ type: "json_object" });
+  });
+
+  it("allows the OpenAI request timeout to be configured", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 })
+    );
+
+    await generateJsonWithOpenAi({
+      apiKey: "test-key",
+      systemPrompt: "Return JSON only.",
+      userPrompt: "Recommend repos.",
+      fetcher,
+      timeoutMs: 2500
+    });
+
+    expect(fetcher.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
   });
 
   it("fails before network access when the api key is missing", async () => {

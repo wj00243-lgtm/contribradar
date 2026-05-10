@@ -28,6 +28,7 @@ describe("createSlackWebhookAdapter", () => {
     await expect(adapter.send(payload)).resolves.toEqual({ status: "sent" });
     expect(fetch).toHaveBeenCalledWith("https://hooks.slack.com/services/test", {
       method: "POST",
+      signal: expect.any(AbortSignal),
       headers: {
         "Content-Type": "application/json"
       },

@@ -1,5 +1,6 @@
 const OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";
 const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
+const DEFAULT_OPENAI_TIMEOUT_MS = 15_000;
 
 type Fetcher = typeof fetch;
 
@@ -9,6 +10,7 @@ type GenerateJsonOptions = {
   systemPrompt: string;
   userPrompt: string;
   temperature?: number;
+  timeoutMs?: number;
   fetcher?: Fetcher;
 };
 
@@ -40,6 +42,7 @@ export async function generateJsonWithOpenAi<T>({
   systemPrompt,
   userPrompt,
   temperature = 0.2,
+  timeoutMs = DEFAULT_OPENAI_TIMEOUT_MS,
   fetcher = fetch
 }: GenerateJsonOptions): Promise<T> {
   if (!apiKey) {
@@ -48,6 +51,7 @@ export async function generateJsonWithOpenAi<T>({
 
   const response = await fetcher(OPENAI_CHAT_COMPLETIONS_URL, {
     method: "POST",
+    signal: AbortSignal.timeout(timeoutMs),
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json"

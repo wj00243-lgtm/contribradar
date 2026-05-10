@@ -60,6 +60,27 @@ describe("discoverRepositoriesFromDb", () => {
     expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 10, skip: 0 }));
     expect(count).toHaveBeenCalledOnce();
   });
+
+  it("uses the current clock for last active filtering instead of a fixed seed date", async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const client = {
+      repository: {
+        findMany,
+        count: vi.fn().mockResolvedValue(0)
+      }
+    };
+
+    await discoverRepositoriesFromDb(client, {
+      lastActiveWithinDays: 7,
+      sort: "score",
+      page: 1,
+      limit: 10
+    }, {
+      now: new Date("2026-06-10T00:00:00Z")
+    });
+
+    expect(findMany.mock.calls[0][0].where.lastCommitAt.gte).toEqual(new Date("2026-06-03T00:00:00Z"));
+  });
 });
 
 describe("getRepositoryScoreFromDb", () => {

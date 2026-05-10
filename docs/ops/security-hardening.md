@@ -38,11 +38,11 @@ Any new write path for JSON fields must validate input with Zod or normalize unk
 
 External calls now pass `AbortSignal.timeout(...)`:
 
-- OpenAI recommendations: default 15 seconds
+- Gemini recommendations: default 15 seconds
 - Resend email delivery: default 10 seconds
 - Slack webhook delivery: default 10 seconds
 
-Delivery still uses retry logic through `deliverAlerts`. OpenAI recommendation failures remain mapped by the API route to existing `502` or `503` responses.
+Delivery still uses retry logic through `deliverAlerts`. Gemini recommendation failures remain mapped by the API route to existing `502` or `503` responses.
 
 ## Seed Time Constants
 

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createRecommendationsPostHandler } from "./route-handler";
 import { RecommendationPlanError, RecommendationQuotaError } from "@/server/recommendations";
-import { OpenAiConfigurationError, OpenAiResponseError } from "@/server/openai";
+import { GeminiConfigurationError, GeminiResponseError } from "@/server/gemini";
 
 function request() {
   return new Request("http://localhost/api/v1/recommendations", { method: "POST" });
@@ -57,35 +57,35 @@ describe("POST /api/v1/recommendations", () => {
     });
   });
 
-  it("returns 503 when OpenAI is not configured", async () => {
+  it("returns 503 when Gemini is not configured", async () => {
     const POST = createRecommendationsPostHandler({
       auth: vi.fn().mockResolvedValue({ user: { id: "user_1", plan: "pro" } }),
       client: {},
       apiKey: "",
-      generateRecommendations: vi.fn().mockRejectedValue(new OpenAiConfigurationError("Missing key"))
+      generateRecommendations: vi.fn().mockRejectedValue(new GeminiConfigurationError("Missing key"))
     });
 
     const response = await POST(request());
 
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toMatchObject({
-      error: { code: "OPENAI_NOT_CONFIGURED" }
+      error: { code: "GEMINI_NOT_CONFIGURED" }
     });
   });
 
-  it("returns 502 when OpenAI returns unusable output", async () => {
+  it("returns 502 when Gemini returns unusable output", async () => {
     const POST = createRecommendationsPostHandler({
       auth: vi.fn().mockResolvedValue({ user: { id: "user_1", plan: "pro" } }),
       client: {},
       apiKey: "test-key",
-      generateRecommendations: vi.fn().mockRejectedValue(new OpenAiResponseError("Bad JSON"))
+      generateRecommendations: vi.fn().mockRejectedValue(new GeminiResponseError("Bad JSON"))
     });
 
     const response = await POST(request());
 
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toMatchObject({
-      error: { code: "OPENAI_RESPONSE_INVALID" }
+      error: { code: "GEMINI_RESPONSE_INVALID" }
     });
   });
 

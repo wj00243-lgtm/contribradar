@@ -86,5 +86,5 @@ Create alerts for:
 - Build failures on `master`.
 - Production 5xx spike.
 - Cron failures for `/api/cron/deliver-alerts`.
-- OpenAI, Resend, or Slack delivery failure spikes.
+- Gemini, Resend, or Slack delivery failure spikes.
 - Database connection or migration failures.

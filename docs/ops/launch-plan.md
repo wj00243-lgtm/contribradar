@@ -35,7 +35,7 @@ Set these on the Vercel production environment:
 - `AUTH_URL`
 - `AUTH_GITHUB_ID`
 - `AUTH_GITHUB_SECRET`
-- `OPENAI_API_KEY`
+- `GEMINI_API_KEY`
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
 - `SLACK_WEBHOOK_URL`

@@ -6,6 +6,6 @@ import { createRecommendationsPostHandler } from "./route-handler";
 export const POST = createRecommendationsPostHandler({
   auth,
   client: prisma,
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.GEMINI_API_KEY,
   generateRecommendations: generateAiRepoRecommendations
 });

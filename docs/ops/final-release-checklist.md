@@ -18,7 +18,7 @@ Use this checklist before the first production launch and before major Pro featu
 - [ ] `AUTH_SECRET` is a strong generated secret.
 - [ ] `AUTH_URL` exactly matches the production origin.
 - [ ] GitHub OAuth callback is `<AUTH_URL>/api/auth/callback/github`.
-- [ ] `OPENAI_API_KEY` is set for AI recommendations.
+- [ ] `GEMINI_API_KEY` is set for AI recommendations.
 - [ ] `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are set for email delivery.
 - [ ] `SLACK_WEBHOOK_URL` is set for Slack alert delivery.
 - [ ] `CRON_SECRET` is set and at least 16 random characters.

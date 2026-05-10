@@ -1,4 +1,4 @@
-import { OpenAiConfigurationError, OpenAiResponseError } from "@/server/openai";
+import { GeminiConfigurationError, GeminiResponseError } from "@/server/gemini";
 import {
   generateAiRepoRecommendations,
   RecommendationPlanError,
@@ -55,12 +55,12 @@ export function createRecommendationsPostHandler({
         return jsonError(404, "USER_NOT_FOUND", "The authenticated user was not found.");
       }
 
-      if (error instanceof OpenAiConfigurationError) {
-        return jsonError(503, "OPENAI_NOT_CONFIGURED", "OpenAI API key is not configured.");
+      if (error instanceof GeminiConfigurationError) {
+        return jsonError(503, "GEMINI_NOT_CONFIGURED", "Gemini API key is not configured.");
       }
 
-      if (error instanceof OpenAiResponseError) {
-        return jsonError(502, "OPENAI_RESPONSE_INVALID", "OpenAI returned an invalid recommendation response.");
+      if (error instanceof GeminiResponseError) {
+        return jsonError(502, "GEMINI_RESPONSE_INVALID", "Gemini returned an invalid recommendation response.");
       }
 
       return jsonError(500, "AI_RECOMMENDATION_FAILED", "AI recommendations could not be generated.");

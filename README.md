@@ -70,7 +70,7 @@ Required for production:
 
 Required for AI recommendations:
 
-- `OPENAI_API_KEY`
+- `GEMINI_API_KEY`
 
 Required for delivery integrations:
 

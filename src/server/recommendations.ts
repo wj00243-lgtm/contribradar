@@ -6,7 +6,7 @@ import {
   type AiRecommendationUsage
 } from "@/server/usage";
 
-import { generateJsonWithOpenAi } from "./openai";
+import { generateJsonWithGemini } from "./gemini";
 
 type JsonArray = string[];
 
@@ -239,7 +239,7 @@ async function defaultRecommendationGenerator(
   context: RecommendationContext,
   options: { apiKey?: string; model?: string }
 ): Promise<AiRecommendationPayload> {
-  return generateJsonWithOpenAi<AiRecommendationPayload>({
+  return generateJsonWithGemini<AiRecommendationPayload>({
     apiKey: options.apiKey,
     model: options.model,
     systemPrompt:

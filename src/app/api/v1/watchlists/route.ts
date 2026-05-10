@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 import { createWatchlist } from "@/server/watchlists";
+import { createWatchlistInDb } from "@/server/watchlists-db";
 import { jsonError, jsonOk } from "@/server/http";
+import { prisma } from "@/server/db";
+import { shouldAllowSeedFallback } from "@/server/persistence-mode";
 
 const watchlistRequestSchema = z.object({
   userId: z.string().min(1).default("user_demo"),
@@ -38,7 +41,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = createWatchlist(parsed.data);
+  const dbResult = await createWatchlistInDb(prisma, parsed.data).catch(() => null);
+  const result = dbResult ?? (shouldAllowSeedFallback() ? createWatchlist(parsed.data) : null);
+
+  if (result === null) {
+    return jsonError(500, "WATCHLIST_PERSISTENCE_FAILED", "Watchlist could not be persisted.");
+  }
 
   if (result.error !== undefined) {
     return jsonError(result.status, result.error.code, result.error.message);

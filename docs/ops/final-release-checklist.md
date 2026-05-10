@@ -22,6 +22,7 @@ Use this checklist before the first production launch and before major Pro featu
 - [ ] `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are set for email delivery.
 - [ ] `SLACK_WEBHOOK_URL` is set for Slack alert delivery.
 - [ ] `CRON_SECRET` is set and at least 16 random characters.
+- [ ] `OPS_API_KEY` is set and stored only in the operator password manager / Vercel env.
 - [ ] `SENTRY_DSN` is set if Sentry is enabled.
 
 ## Database
@@ -50,10 +51,12 @@ Use this checklist before the first production launch and before major Pro featu
 - [ ] Vercel Cron logs show `GET /api/cron/deliver-alerts`.
 - [ ] Runtime logs contain structured JSON events for cron failures.
 - [ ] `OPS_API_KEY` is set and `GET /api/ops/cron-runs` returns recent cron history.
+- [ ] `/ops` loads recent cron history with the current `OPS_API_KEY`.
 - [ ] Vercel Web Analytics is enabled and records a production page view.
 - [ ] Log Drain or Sentry integration is configured if required for launch.
 - [ ] Error tracking test event is visible in the monitoring provider if Sentry is enabled.
 - [ ] Review `docs/ops/security-hardening.md` before changing auth, JSON write paths, or external API adapters.
+- [ ] Review `docs/ops/private-beta.md` before inviting private beta users.
 
 ## Release Tag
 

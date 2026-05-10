@@ -33,6 +33,7 @@ Sprint 8 adds database-backed cron observability:
 - `cron_runs` stores each `/api/cron/deliver-alerts` run with status, counts, duration, and failure summary.
 - `delivery_attempt_logs` stores per-channel delivery attempts for email and Slack.
 - `GET /api/ops/cron-runs` returns the 10 most recent cron runs with recent delivery attempts.
+- `/ops` provides a read-only browser dashboard for operators with the current `OPS_API_KEY`.
 
 Protect the ops endpoint with:
 
@@ -44,6 +45,12 @@ Manual check:
 
 ```powershell
 Invoke-RestMethod -Headers @{ Authorization = "Bearer $env:OPS_API_KEY" } https://contribradar.vercel.app/api/ops/cron-runs
+```
+
+Browser check:
+
+```text
+https://contribradar.vercel.app/ops
 ```
 
 ## Log Drains

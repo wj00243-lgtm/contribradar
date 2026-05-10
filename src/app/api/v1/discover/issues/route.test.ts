@@ -1,6 +1,48 @@
 import { describe, expect, it } from "vitest";
 
-import { GET } from "./route";
+import { createIssuesGetHandler } from "./route-handler";
+
+const GET = createIssuesGetHandler({
+  client: {},
+  discoverIssues: async () => ({
+    issues: [
+      {
+        id: "issue_1",
+        repoId: "repo_1",
+        githubId: "1",
+        number: 1,
+        title: "Issue",
+        body: "Body",
+        state: "open",
+        labels: [],
+        assignees: [],
+        createdAt: "2026-05-01T00:00:00.000Z",
+        updatedAt: "2026-05-01T00:00:00.000Z",
+        closedAt: null,
+        lastCommentAt: null,
+        firstResponseHours: null,
+        isStale: false,
+        difficulty: "easy",
+        metrics: {
+          bodyWordCount: 1,
+          acceptanceCriteriaCount: 0,
+          commentCount: 0,
+          maintainerCommentCount: 0,
+          ageHours: 0,
+          assigneeCount: 0
+        },
+        readiness: {
+          score: 90,
+          confidence: 80,
+          breakdown: [],
+          explanation: "",
+          warnings: []
+        }
+      }
+    ],
+    total: 1
+  })
+});
 
 async function getIssues(query = "") {
   return GET(new Request(`http://localhost/api/v1/discover/issues${query}`));

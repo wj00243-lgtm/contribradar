@@ -16,10 +16,10 @@
 - Modify: `src/server/discovery-db.ts`
 - Modify: `src/server/discovery-db.test.ts`
 
-- [ ] Add failing tests for issue filters: repo, labels, min score, stale, no assignee, difficulty.
-- [ ] Implement `discoverIssuesFromDb(client, query)`.
-- [ ] Map Prisma issue records with `mapIssueRecord`.
-- [ ] Run `bun test src/server/discovery-db.test.ts`.
+- [x] Add failing tests for issue filters: repo, labels, min score, stale, no assignee, difficulty.
+- [x] Implement `discoverIssuesFromDb(client, query)`.
+- [x] Map Prisma issue records with `mapIssueRecord`.
+- [x] Run `bun test src/server/discovery-db.test.ts`.
 
 ### Task 2: Issue Route Handler
 
@@ -28,10 +28,10 @@
 - Modify: `src/app/api/v1/discover/issues/route.ts`
 - Modify: `src/app/api/v1/discover/issues/route.test.ts`
 
-- [ ] Move query parsing into a handler factory.
-- [ ] Wire default route to `discoverIssuesFromDb(prisma, query)`.
-- [ ] Remove seed fallback from issue API route.
-- [ ] Keep validation errors unchanged.
+- [x] Move query parsing into a handler factory.
+- [x] Wire default route to `discoverIssuesFromDb(prisma, query)`.
+- [x] Remove seed fallback from issue API route.
+- [x] Keep validation errors unchanged.
 
 ### Task 3: Watchlist Auth Route Handlers
 
@@ -43,11 +43,11 @@
 - Modify: `src/app/api/v1/watchlists/[id]/repos/route.ts`
 - Create: `src/app/api/v1/watchlists/[id]/repos/route.test.ts`
 
-- [ ] Require session for watchlist create and read.
-- [ ] Use `session.user.id`, never request body `userId`.
-- [ ] Use `session.user.plan` for limits.
-- [ ] Return `401 AUTH_REQUIRED` for anonymous requests.
-- [ ] Remove `user_demo` route fallback.
+- [x] Require session for watchlist create and read.
+- [x] Use `session.user.id`, never request body `userId`.
+- [x] Use `session.user.plan` for limits.
+- [x] Return `401 AUTH_REQUIRED` for anonymous requests.
+- [x] Remove `user_demo` route fallback.
 
 ### Task 4: Verification and Docs
 
@@ -55,8 +55,8 @@
 - Modify: `README.md`
 - Modify: `docs/qa/sprint-3-production-readiness.md`
 
-- [ ] Document anonymous watchlist API behavior.
-- [ ] Run full verification.
+- [x] Document anonymous watchlist API behavior.
+- [x] Run full verification.
 
 ### Task 5: Full Verification
 

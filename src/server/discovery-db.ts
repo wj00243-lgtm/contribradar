@@ -1,7 +1,6 @@
 import type { DiscoverIssuesQuery, DiscoverReposQuery, IssueWithScore, RepoWithScore, ScoreComponent, SortMode } from "@/domain/types";
 import { mapIssueRecord, mapRepositoryRecord } from "./repository-mappers";
 
-const FIXED_NOW = new Date("2026-05-06T00:00:00.000Z");
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 type RepositoryClient = {
@@ -48,11 +47,12 @@ type RepositoryScoreResponse =
 
 export async function discoverRepositoriesFromDb(
   client: RepositoryClient,
-  query: Partial<DiscoverReposQuery> = {}
+  query: Partial<DiscoverReposQuery> = {},
+  options: { now?: Date } = {}
 ): Promise<{ repos: RepoWithScore[]; total: number; facets: RepositoryFacets }> {
   const page = normalizePage(query.page);
   const limit = normalizeLimit(query.limit);
-  const where = repositoryWhere(query);
+  const where = repositoryWhere(query, options.now ?? new Date());
   const orderBy = repositoryOrderBy(query.sort ?? "score");
   const include = {
     issues: {
@@ -149,7 +149,7 @@ export async function discoverIssuesFromDb(
   };
 }
 
-function repositoryWhere(query: Partial<DiscoverReposQuery>) {
+function repositoryWhere(query: Partial<DiscoverReposQuery>, now: Date) {
   const where: Record<string, unknown> = {};
 
   if (query.language) {
@@ -166,7 +166,7 @@ function repositoryWhere(query: Partial<DiscoverReposQuery>) {
 
   if (query.lastActiveWithinDays !== undefined) {
     where.lastCommitAt = {
-      gte: new Date(FIXED_NOW.getTime() - query.lastActiveWithinDays * MS_PER_DAY)
+      gte: new Date(now.getTime() - query.lastActiveWithinDays * MS_PER_DAY)
     };
   }
 

@@ -52,6 +52,7 @@ Use this checklist before the first production launch and before major Pro featu
 - [ ] Vercel Web Analytics is enabled and records a production page view.
 - [ ] Log Drain or Sentry integration is configured if required for launch.
 - [ ] Error tracking test event is visible in the monitoring provider if Sentry is enabled.
+- [ ] Review `docs/ops/security-hardening.md` before changing auth, JSON write paths, or external API adapters.
 
 ## Release Tag
 

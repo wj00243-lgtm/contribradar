@@ -147,6 +147,7 @@ docs/ops/final-release-checklist.md
 docs/ops/launch-plan.md
 docs/ops/monitoring.md
 docs/ops/release-tagging.md
+docs/ops/security-hardening.md
 ```
 
 ## Current Scope

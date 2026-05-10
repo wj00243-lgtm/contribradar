@@ -8,11 +8,13 @@ type FetchLike = (url: string, init: RequestInit) => Promise<{
 
 type SlackWebhookAdapterOptions = {
   webhookUrl?: string;
+  timeoutMs?: number;
   fetch?: FetchLike;
 };
 
 export function createSlackWebhookAdapter({
   webhookUrl,
+  timeoutMs = 10_000,
   fetch: fetchImpl = fetch as FetchLike
 }: SlackWebhookAdapterOptions): DeliveryAdapter {
   return {
@@ -27,6 +29,7 @@ export function createSlackWebhookAdapter({
 
       const response = await fetchImpl(webhookUrl, {
         method: "POST",
+        signal: AbortSignal.timeout(timeoutMs),
         headers: {
           "Content-Type": "application/json"
         },

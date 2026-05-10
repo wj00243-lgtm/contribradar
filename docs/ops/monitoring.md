@@ -26,6 +26,26 @@ In Vercel logs, filter by:
 requestPath:/api/cron/deliver-alerts
 ```
 
+## Durable Cron History
+
+Sprint 8 adds database-backed cron observability:
+
+- `cron_runs` stores each `/api/cron/deliver-alerts` run with status, counts, duration, and failure summary.
+- `delivery_attempt_logs` stores per-channel delivery attempts for email and Slack.
+- `GET /api/ops/cron-runs` returns the 10 most recent cron runs with recent delivery attempts.
+
+Protect the ops endpoint with:
+
+```text
+OPS_API_KEY=<strong random value>
+```
+
+Manual check:
+
+```powershell
+Invoke-RestMethod -Headers @{ Authorization = "Bearer $env:OPS_API_KEY" } https://contribradar.vercel.app/api/ops/cron-runs
+```
+
 ## Log Drains
 
 For Pro or Enterprise Vercel projects, configure Log Drains when persistent external log retention is required.

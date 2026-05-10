@@ -42,6 +42,23 @@ enum ContributionStatus {
   closed
 }
 
+enum CronRunStatus {
+  running
+  succeeded
+  failed
+}
+
+enum DeliveryChannel {
+  email
+  slack
+}
+
+enum DeliveryStatus {
+  sent
+  skipped
+  failed
+}
+
 model User {
   id               String      @id @default(cuid())
   githubId         String?     @unique
@@ -59,6 +76,7 @@ model User {
   contributions    Contribution[]
   usageLogs        UsageLog[]
   settings         UserSettings?
+  deliveryAttempts DeliveryAttemptLog[]
 
   @@map("users")
 }
@@ -169,9 +187,50 @@ model Alert {
   reasonText String
   isRead     Boolean    @default(false)
   createdAt  DateTime   @default(now())
+  deliveryAttempts DeliveryAttemptLog[]
 
   @@index([userId, isRead, createdAt(sort: Desc)])
   @@map("alerts")
+}
+
+model CronRun {
+  id            String               @id @default(cuid())
+  name          String
+  status        CronRunStatus        @default(running)
+  usersChecked  Int                  @default(0)
+  alertsCreated Int                  @default(0)
+  failures      Int                  @default(0)
+  startedAt     DateTime             @default(now())
+  finishedAt    DateTime?
+  durationMs    Int?
+  errorSummary  String?
+  attempts      DeliveryAttemptLog[]
+
+  @@index([name, startedAt(sort: Desc)])
+  @@index([status, startedAt(sort: Desc)])
+  @@map("cron_runs")
+}
+
+model DeliveryAttemptLog {
+  id         String         @id @default(cuid())
+  runId      String
+  run        CronRun        @relation(fields: [runId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  alertId    String?
+  alert      Alert?         @relation(fields: [alertId], references: [id], onDelete: SetNull)
+  channel    DeliveryChannel
+  status     DeliveryStatus
+  attempts   Int            @default(0)
+  providerId String?
+  reason     String?
+  error      String?
+  createdAt  DateTime       @default(now())
+
+  @@index([runId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([alertId])
+  @@map("delivery_attempt_logs")
 }
 
 model ScoreLog {

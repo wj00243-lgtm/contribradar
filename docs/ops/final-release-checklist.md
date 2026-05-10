@@ -8,6 +8,7 @@ Use this checklist before the first production launch and before major Pro featu
 - [ ] `bun run typecheck`
 - [ ] `bun run build`
 - [ ] `bun run qa:env`
+- [ ] `bun run qa:launch`
 - [ ] `bunx prisma validate`
 - [ ] `bunx prisma generate`
 
@@ -21,6 +22,7 @@ Use this checklist before the first production launch and before major Pro featu
 - [ ] `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are set for email delivery.
 - [ ] `SLACK_WEBHOOK_URL` is set for Slack alert delivery.
 - [ ] `CRON_SECRET` is set and at least 16 random characters.
+- [ ] `SENTRY_DSN` is set if Sentry is enabled.
 
 ## Database
 
@@ -47,6 +49,16 @@ Use this checklist before the first production launch and before major Pro featu
 - [ ] Vercel Cron is visible in Project Settings.
 - [ ] Vercel Cron logs show `GET /api/cron/deliver-alerts`.
 - [ ] Runtime logs contain structured JSON events for cron failures.
+- [ ] Vercel Web Analytics is enabled and records a production page view.
+- [ ] Log Drain or Sentry integration is configured if required for launch.
+- [ ] Error tracking test event is visible in the monitoring provider if Sentry is enabled.
+
+## Release Tag
+
+- [ ] Confirm this checklist is complete.
+- [ ] Confirm production smoke passes.
+- [ ] Create and push `v1.0.0` from updated `master`.
+- [ ] Confirm GitHub shows the `v1.0.0` tag.
 
 ## Rollback
 

@@ -144,6 +144,9 @@ Deployment operations:
 docs/ops/vercel-deployment.md
 docs/ops/deploy-smoke.md
 docs/ops/final-release-checklist.md
+docs/ops/launch-plan.md
+docs/ops/monitoring.md
+docs/ops/release-tagging.md
 ```
 
 ## Current Scope

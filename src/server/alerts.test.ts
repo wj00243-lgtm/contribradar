@@ -119,6 +119,37 @@ describe("checkSmartAlerts", () => {
     expect(create.mock.calls.map((call) => call[0].data.type)).toEqual(["new_issue", "score_change", "stale_reminder"]);
   });
 
+  it("returns normalized delivery preferences from user settings", async () => {
+    const client = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "user_1",
+          plan: "pro",
+          settings: { alertPreferences: { email: true, slack: true, digest: "daily" } }
+        })
+      },
+      alert: {
+        count: vi.fn().mockResolvedValue(10),
+        findFirst: vi.fn(),
+        create: vi.fn()
+      },
+      userSettings: {
+        findUnique: vi.fn().mockResolvedValue({ maxAlerts: 10 })
+      },
+      watchlist: {
+        findMany: vi.fn()
+      }
+    };
+
+    const result = await checkSmartAlerts(client, "user_1");
+
+    expect(result.preferences).toEqual({
+      email: true,
+      slack: true,
+      digest: "daily"
+    });
+  });
+
   it("does not create alerts when the active limit is reached", async () => {
     const client = {
       user: {

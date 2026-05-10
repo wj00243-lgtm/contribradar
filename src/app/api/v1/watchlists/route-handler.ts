@@ -3,19 +3,25 @@ import { z } from "zod";
 import type { Plan } from "@/domain/types";
 import { normalizePlan } from "@/lib/features";
 import { jsonError, jsonOk } from "@/server/http";
+import { ensureUserFromSession } from "@/server/users";
 import { createWatchlistInDb } from "@/server/watchlists-db";
 
 type SessionLike = {
   user?: {
     id?: string;
+    githubId?: string;
+    email?: string | null;
+    name?: string | null;
+    image?: string | null;
     plan?: string;
   };
 } | null;
 
 type Dependencies = {
   auth: () => Promise<SessionLike>;
-  client: Parameters<typeof createWatchlistInDb>[0] | unknown;
+  client: Parameters<typeof createWatchlistInDb>[0] | Parameters<typeof ensureUserFromSession>[0] | unknown;
   createWatchlist: typeof createWatchlistInDb;
+  ensureUser?: typeof ensureUserFromSession;
 };
 
 const watchlistRequestSchema = z.object({
@@ -34,7 +40,8 @@ const watchlistRequestSchema = z.object({
 export function createWatchlistsPostHandler({
   auth: getSession,
   client,
-  createWatchlist
+  createWatchlist,
+  ensureUser = ensureUserFromSession
 }: Dependencies) {
   return async function POST(request: Request) {
     const session = await getSession();
@@ -63,10 +70,19 @@ export function createWatchlistsPostHandler({
       );
     }
 
+    const user = await ensureUser(client as Parameters<typeof ensureUserFromSession>[0], {
+      id: userId,
+      githubId: session.user?.githubId,
+      email: session.user?.email,
+      name: session.user?.name,
+      image: session.user?.image,
+      plan: session.user?.plan
+    });
+
     const result = await createWatchlist(client as Parameters<typeof createWatchlistInDb>[0], {
       ...parsed.data,
-      userId,
-      userPlan: normalizePlan(session.user?.plan) as Plan
+      userId: user.id,
+      userPlan: normalizePlan(user.plan) as Plan
     });
 
     if (result.error !== undefined) {

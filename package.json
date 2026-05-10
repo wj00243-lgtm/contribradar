@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "qa:env": "node scripts/check-env.mjs",
+    "qa:smoke": "node scripts/deploy-smoke.mjs",
     "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",
     "prisma:seed": "tsx prisma/seed.ts"

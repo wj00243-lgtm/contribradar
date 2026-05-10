@@ -13,6 +13,7 @@ $env:DATABASE_URL='postgresql://contribradar:contribradar@localhost:5432/contrib
 bun run typecheck
 bun run build
 bun run qa:env
+node scripts/deploy-smoke.mjs --help
 ```
 
 Expected:
@@ -22,6 +23,7 @@ Expected:
 - TypeScript passes.
 - Next build passes.
 - `qa:env` reports required production variables.
+- Deploy smoke script starts and prints usage.
 
 ## Environment Checklist
 
@@ -50,6 +52,8 @@ Recommended manual checks:
 - GitHub OAuth callback is configured as `<AUTH_URL>/api/auth/callback/github`.
 - `AUTH_SECRET` is generated from a strong random source.
 - `DATABASE_URL` points at the intended production PostgreSQL database.
+- Vercel Cron is configured from `vercel.json`.
+- `CRON_SECRET` is set so Vercel sends `Authorization: Bearer <CRON_SECRET>` to cron invocations.
 
 ## Database Checklist
 
@@ -93,6 +97,7 @@ Smoke checks:
 - Call watchlist create/read routes without a session and confirm `401 AUTH_REQUIRED`.
 - Call `GET /api/cron/deliver-alerts` with an invalid bearer token and confirm `401 CRON_UNAUTHORIZED`.
 - Call `GET /api/cron/deliver-alerts` with the correct bearer token and confirm delivery attempts are reported.
+- Run `bun run qa:smoke -- --base-url <production-url> --cron-secret <CRON_SECRET>`.
 - Restart the app and confirm the created watchlist is still available.
 
 ## Manual Product Smoke
@@ -152,4 +157,4 @@ Smoke checks:
 
 ## Known Follow-Ups
 
-- Add deployment provider-specific environment and migration instructions.
+- Add provider-specific rollback screenshots after first production deploy.

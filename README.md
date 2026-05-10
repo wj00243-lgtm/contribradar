@@ -138,6 +138,14 @@ Production readiness checklist:
 docs/qa/sprint-3-production-readiness.md
 ```
 
+Deployment operations:
+
+```text
+docs/ops/vercel-deployment.md
+docs/ops/deploy-smoke.md
+docs/ops/final-release-checklist.md
+```
+
 ## Current Scope
 
 Included:

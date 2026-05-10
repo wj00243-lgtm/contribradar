@@ -51,7 +51,7 @@ describe("GET /api/cron/deliver-alerts", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body).toEqual({ usersChecked: 0, alertsCreated: 0, deliveries: [] });
+    expect(body).toEqual({ usersChecked: 0, alertsCreated: 0, failures: 0, deliveries: [] });
     expect(getUsersForDelivery).toHaveBeenCalledWith({ marker: "client" });
   });
 
@@ -85,6 +85,7 @@ describe("GET /api/cron/deliver-alerts", () => {
     expect(body).toEqual({
       usersChecked: 1,
       alertsCreated: 1,
+      failures: 0,
       deliveries: [
         {
           userId: "user_1",
@@ -92,6 +93,63 @@ describe("GET /api/cron/deliver-alerts", () => {
           attempts: [{ alertId: "alert_1", channel: "email", status: "sent", attempts: 1 }]
         }
       ]
+    });
+  });
+
+  it("logs per-user failures and continues processing remaining users", async () => {
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn()
+    };
+    const checkSmartAlerts = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("database timeout"))
+      .mockResolvedValueOnce({
+        created: [alert],
+        preferences: { email: true, slack: false, digest: "weekly" },
+        limitReached: false
+      });
+    const deliverAlerts = vi.fn().mockResolvedValue({
+      attempts: [{ alertId: "alert_1", channel: "email", status: "sent", attempts: 1 }]
+    });
+    const handler = createDeliverAlertsCronHandler({
+      cronSecret: "",
+      client: { marker: "client" },
+      checkSmartAlerts,
+      deliverAlerts,
+      getUsersForDelivery: vi.fn().mockResolvedValue([
+        { ...user, id: "user_1" },
+        { ...user, id: "user_2" }
+      ]),
+      logger
+    });
+
+    const response = await handler(request());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({
+      usersChecked: 2,
+      alertsCreated: 1,
+      failures: 1,
+      deliveries: [
+        {
+          userId: "user_1",
+          created: 0,
+          attempts: [],
+          error: "database timeout"
+        },
+        {
+          userId: "user_2",
+          created: 1,
+          attempts: [{ alertId: "alert_1", channel: "email", status: "sent", attempts: 1 }]
+        }
+      ]
+    });
+    expect(logger.error).toHaveBeenCalledWith("cron.deliver_alerts.user_failed", expect.any(Error), {
+      route: "/api/cron/deliver-alerts",
+      userId: "user_1"
     });
   });
 });

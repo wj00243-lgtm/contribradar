@@ -1,6 +1,7 @@
 import { checkSmartAlerts, type AlertClient } from "@/server/alerts";
 import { deliverAlerts, type DeliverableAlert, type DeliverAlertsInput } from "@/server/delivery";
 import { jsonError, jsonOk } from "@/server/http";
+import { logger as defaultLogger, type Logger } from "@/server/logger";
 
 export type DeliveryUserRecord = {
   id: string;
@@ -23,6 +24,7 @@ type Dependencies = {
   checkSmartAlerts: CheckSmartAlerts;
   deliverAlerts: DeliverAlerts;
   getUsersForDelivery?: typeof getUsersForDelivery;
+  logger?: Logger;
   now?: () => Date;
 };
 
@@ -32,6 +34,7 @@ export function createDeliverAlertsCronHandler({
   checkSmartAlerts: checkAlerts,
   deliverAlerts: deliver,
   getUsersForDelivery: getUsers = getUsersForDelivery,
+  logger = defaultLogger,
   now = () => new Date()
 }: Dependencies) {
   return async function GET(request: Request) {
@@ -43,28 +46,44 @@ export function createDeliverAlertsCronHandler({
     const users = await getUsers(deliveryClient);
     const deliveries = [];
     let alertsCreated = 0;
+    let failures = 0;
 
     for (const user of users) {
-      const result = await checkAlerts(deliveryClient, user.id, now());
-      const createdAlerts = result.created.map(toDeliverableAlert);
-      alertsCreated += createdAlerts.length;
+      try {
+        const result = await checkAlerts(deliveryClient, user.id, now());
+        const createdAlerts = result.created.map(toDeliverableAlert);
+        alertsCreated += createdAlerts.length;
 
-      const delivery = await deliver({
-        user,
-        alerts: createdAlerts,
-        preferences: result.preferences
-      });
+        const delivery = await deliver({
+          user,
+          alerts: createdAlerts,
+          preferences: result.preferences
+        });
 
-      deliveries.push({
-        userId: user.id,
-        created: createdAlerts.length,
-        attempts: delivery.attempts
-      });
+        deliveries.push({
+          userId: user.id,
+          created: createdAlerts.length,
+          attempts: delivery.attempts
+        });
+      } catch (error) {
+        failures += 1;
+        logger.error("cron.deliver_alerts.user_failed", error, {
+          route: "/api/cron/deliver-alerts",
+          userId: user.id
+        });
+        deliveries.push({
+          userId: user.id,
+          created: 0,
+          attempts: [],
+          error: error instanceof Error ? error.message : "Delivery failed."
+        });
+      }
     }
 
     return jsonOk({
       usersChecked: users.length,
       alertsCreated,
+      failures,
       deliveries
     });
   };

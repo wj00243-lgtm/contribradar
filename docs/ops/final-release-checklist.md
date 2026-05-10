@@ -49,6 +49,7 @@ Use this checklist before the first production launch and before major Pro featu
 - [ ] Vercel Cron is visible in Project Settings.
 - [ ] Vercel Cron logs show `GET /api/cron/deliver-alerts`.
 - [ ] Runtime logs contain structured JSON events for cron failures.
+- [ ] `OPS_API_KEY` is set and `GET /api/ops/cron-runs` returns recent cron history.
 - [ ] Vercel Web Analytics is enabled and records a production page view.
 - [ ] Log Drain or Sentry integration is configured if required for launch.
 - [ ] Error tracking test event is visible in the monitoring provider if Sentry is enabled.

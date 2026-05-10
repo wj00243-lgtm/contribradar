@@ -2,6 +2,13 @@ import { checkSmartAlerts, type AlertClient } from "@/server/alerts";
 import { deliverAlerts, type DeliverableAlert, type DeliverAlertsInput } from "@/server/delivery";
 import { jsonError, jsonOk } from "@/server/http";
 import { logger as defaultLogger, type Logger } from "@/server/logger";
+import {
+  completeCronRun,
+  failCronRun,
+  logDeliveryAttempts,
+  startCronRun,
+  type OpsObservabilityClient
+} from "@/server/ops-observability";
 
 export type DeliveryUserRecord = {
   id: string;
@@ -22,20 +29,28 @@ type Dependencies = {
   cronSecret?: string;
   client: DeliveryCronClient | unknown;
   checkSmartAlerts: CheckSmartAlerts;
+  completeCronRun?: typeof completeCronRun;
   deliverAlerts: DeliverAlerts;
+  failCronRun?: typeof failCronRun;
   getUsersForDelivery?: typeof getUsersForDelivery;
+  logDeliveryAttempts?: typeof logDeliveryAttempts;
   logger?: Logger;
   now?: () => Date;
+  startCronRun?: typeof startCronRun;
 };
 
 export function createDeliverAlertsCronHandler({
   cronSecret,
   client,
   checkSmartAlerts: checkAlerts,
+  completeCronRun: completeRun = completeCronRun,
   deliverAlerts: deliver,
+  failCronRun: failRun = failCronRun,
   getUsersForDelivery: getUsers = getUsersForDelivery,
+  logDeliveryAttempts: logAttempts = logDeliveryAttempts,
   logger = defaultLogger,
-  now = () => new Date()
+  now = () => new Date(),
+  startCronRun: startRun = startCronRun
 }: Dependencies) {
   return async function GET(request: Request) {
     if (cronSecret && request.headers.get("authorization") !== `Bearer ${cronSecret}`) {
@@ -43,7 +58,16 @@ export function createDeliverAlertsCronHandler({
     }
 
     const deliveryClient = client as DeliveryCronClient;
-    const users = await getUsers(deliveryClient);
+    const run = await startRun(deliveryClient as OpsObservabilityClient, "deliver-alerts", now());
+    let users: DeliveryUserRecord[];
+
+    try {
+      users = await getUsers(deliveryClient);
+    } catch (error) {
+      await failRun(deliveryClient as OpsObservabilityClient, run, error, now());
+      throw error;
+    }
+
     const deliveries = [];
     let alertsCreated = 0;
     let failures = 0;
@@ -65,6 +89,11 @@ export function createDeliverAlertsCronHandler({
           created: createdAlerts.length,
           attempts: delivery.attempts
         });
+        await logAttempts(deliveryClient as OpsObservabilityClient, {
+          runId: run?.id,
+          userId: user.id,
+          attempts: delivery.attempts
+        });
       } catch (error) {
         failures += 1;
         logger.error("cron.deliver_alerts.user_failed", error, {
@@ -80,10 +109,19 @@ export function createDeliverAlertsCronHandler({
       }
     }
 
+    await completeRun(deliveryClient as OpsObservabilityClient, run, {
+      status: "succeeded",
+      usersChecked: users.length,
+      alertsCreated,
+      failures,
+      finishedAt: now()
+    });
+
     return jsonOk({
       usersChecked: users.length,
       alertsCreated,
       failures,
+      runId: run?.id ?? null,
       deliveries
     });
   };

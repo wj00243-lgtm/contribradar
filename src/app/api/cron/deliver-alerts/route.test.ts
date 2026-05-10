@@ -51,7 +51,7 @@ describe("GET /api/cron/deliver-alerts", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body).toEqual({ usersChecked: 0, alertsCreated: 0, failures: 0, deliveries: [] });
+    expect(body).toEqual({ usersChecked: 0, alertsCreated: 0, failures: 0, runId: null, deliveries: [] });
     expect(getUsersForDelivery).toHaveBeenCalledWith({ marker: "client" });
   });
 
@@ -69,7 +69,10 @@ describe("GET /api/cron/deliver-alerts", () => {
       client: { marker: "client" },
       checkSmartAlerts,
       deliverAlerts,
-      getUsersForDelivery: vi.fn().mockResolvedValue([user])
+      getUsersForDelivery: vi.fn().mockResolvedValue([user]),
+      startCronRun: vi.fn().mockResolvedValue({ id: "run_1", startedAt: new Date("2026-05-10T00:00:00Z") }),
+      completeCronRun: vi.fn(),
+      logDeliveryAttempts: vi.fn()
     });
 
     const response = await handler(request("secret"));
@@ -86,6 +89,7 @@ describe("GET /api/cron/deliver-alerts", () => {
       usersChecked: 1,
       alertsCreated: 1,
       failures: 0,
+      runId: "run_1",
       deliveries: [
         {
           userId: "user_1",
@@ -122,6 +126,9 @@ describe("GET /api/cron/deliver-alerts", () => {
         { ...user, id: "user_1" },
         { ...user, id: "user_2" }
       ]),
+      startCronRun: vi.fn().mockResolvedValue({ id: "run_1", startedAt: new Date("2026-05-10T00:00:00Z") }),
+      completeCronRun: vi.fn(),
+      logDeliveryAttempts: vi.fn(),
       logger
     });
 
@@ -133,6 +140,7 @@ describe("GET /api/cron/deliver-alerts", () => {
       usersChecked: 2,
       alertsCreated: 1,
       failures: 1,
+      runId: "run_1",
       deliveries: [
         {
           userId: "user_1",
@@ -151,5 +159,48 @@ describe("GET /api/cron/deliver-alerts", () => {
       route: "/api/cron/deliver-alerts",
       userId: "user_1"
     });
+  });
+
+  it("records cron run completion and delivery attempts", async () => {
+    const completeCronRun = vi.fn();
+    const logDeliveryAttempts = vi.fn();
+    const deliveryAttempts = [{ alertId: "alert_1", channel: "email", status: "sent", attempts: 1 }];
+    const handler = createDeliverAlertsCronHandler({
+      cronSecret: "",
+      client: { marker: "client" },
+      checkSmartAlerts: vi.fn().mockResolvedValue({
+        created: [alert],
+        preferences: { email: true, slack: false, digest: "weekly" },
+        limitReached: false
+      }),
+      deliverAlerts: vi.fn().mockResolvedValue({ attempts: deliveryAttempts }),
+      getUsersForDelivery: vi.fn().mockResolvedValue([user]),
+      startCronRun: vi.fn().mockResolvedValue({ id: "run_1", startedAt: new Date("2026-05-10T00:00:00Z") }),
+      completeCronRun,
+      logDeliveryAttempts,
+      now: () => new Date("2026-05-10T00:00:03Z")
+    });
+
+    await handler(request());
+
+    expect(logDeliveryAttempts).toHaveBeenCalledWith(
+      { marker: "client" },
+      {
+        runId: "run_1",
+        userId: "user_1",
+        attempts: deliveryAttempts
+      }
+    );
+    expect(completeCronRun).toHaveBeenCalledWith(
+      { marker: "client" },
+      { id: "run_1", startedAt: new Date("2026-05-10T00:00:00Z") },
+      {
+        status: "succeeded",
+        usersChecked: 1,
+        alertsCreated: 1,
+        failures: 0,
+        finishedAt: new Date("2026-05-10T00:00:03Z")
+      }
+    );
   });
 });

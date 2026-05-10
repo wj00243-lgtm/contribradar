@@ -61,11 +61,15 @@ describe("POST /api/v1/watchlists", () => {
       auth: async () => ({
         user: {
           id: "user_session",
+          githubId: "github_session",
+          email: "session@example.com",
+          name: "Session User",
           plan: "pro"
         }
       }),
       client: { watchlist: {}, repository: {} },
-      createWatchlist
+      createWatchlist,
+      ensureUser: vi.fn(async () => ({ id: "user_session", plan: "pro" as const }))
     });
 
     const response = await POST(
@@ -87,6 +91,49 @@ describe("POST /api/v1/watchlists", () => {
     );
   });
 
+  it("ensures the OAuth session user exists before creating the watchlist", async () => {
+    const createWatchlist = vi.fn(async () => ({
+      status: 201 as const,
+      data: { watchlist }
+    }));
+    const ensureUser = vi.fn(async () => ({ id: "user_db", plan: "free" as const }));
+    const client = { watchlist: {}, repository: {}, user: {} };
+    const POST = createWatchlistsPostHandler({
+      auth: async () => ({
+        user: {
+          id: "github_sub",
+          githubId: "123",
+          email: "ferit@example.com",
+          name: "Ferit",
+          image: "https://example.com/avatar.png",
+          plan: "pro"
+        }
+      }),
+      client,
+      createWatchlist,
+      ensureUser
+    });
+
+    const response = await POST(postRequest(baseRequest));
+
+    expect(response.status).toBe(201);
+    expect(ensureUser).toHaveBeenCalledWith(client, {
+      id: "github_sub",
+      githubId: "123",
+      email: "ferit@example.com",
+      name: "Ferit",
+      image: "https://example.com/avatar.png",
+      plan: "pro"
+    });
+    expect(createWatchlist).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({
+        userId: "user_db",
+        userPlan: "free"
+      })
+    );
+  });
+
   it("maps DB watchlist limit errors to the route response", async () => {
     const POST = createWatchlistsPostHandler({
       auth: async () => ({
@@ -102,7 +149,8 @@ describe("POST /api/v1/watchlists", () => {
           code: "FREE_WATCHLIST_LIMIT_REACHED" as const,
           message: "Free users can create up to 3 watchlists."
         }
-      })
+      }),
+      ensureUser: vi.fn(async () => ({ id: "user_session", plan: "free" as const }))
     });
 
     const response = await POST(postRequest(baseRequest));

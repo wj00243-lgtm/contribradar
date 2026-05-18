@@ -67,6 +67,12 @@ After a deployment, verify that ingestion writes to the database and the ingeste
 bun run qa:github:ingest -- --base-url https://contribradar.vercel.app --repo vercel/next.js --ops-api-key $env:OPS_API_KEY
 ```
 
+General deploy smoke also checks that the scheduled ingestion cron route is deployed and authorized:
+
+```powershell
+bun run qa:smoke -- --base-url https://contribradar.vercel.app --cron-secret $env:CRON_SECRET
+```
+
 The script checks:
 
 - `POST /api/ops/ingest-github`

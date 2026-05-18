@@ -21,6 +21,13 @@ const checks = [
     expected: args.cronSecret ? [200] : [401],
     headers: args.cronSecret ? { Authorization: `Bearer ${args.cronSecret}` } : undefined,
     skip: args.skipCron
+  },
+  {
+    name: "GitHub ingestion cron",
+    path: "/api/cron/ingest-github",
+    expected: args.cronSecret ? [200] : [401],
+    headers: args.cronSecret ? { Authorization: `Bearer ${args.cronSecret}` } : undefined,
+    skip: args.skipCron
   }
 ];
 

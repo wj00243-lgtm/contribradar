@@ -68,11 +68,9 @@ No-go:
 Before inviting, assign the correct plan in production:
 
 ```powershell
-# Using Prisma Studio (interactive, recommended)
-$env:DATABASE_URL='<production-connection-string>'; bunx prisma studio
-
-# Or direct SQL
-UPDATE users SET plan = 'pro' WHERE githubId = '<github_id>';
+$env:DATABASE_URL='<production-connection-string>'
+bun run ops:user:plan -- --user="<github_id-or-email-or-user-id>" --plan=pro
+bun run ops:user:plan -- --user="<github_id-or-email-or-user-id>" --plan=pro --apply
 ```
 
 Track invited users in `docs/ops/beta-users.md`.

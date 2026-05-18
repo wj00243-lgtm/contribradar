@@ -78,16 +78,54 @@ Reference: [Vercel Drains](https://vercel.com/docs/observability/log-drains)
 
 ## Error Tracking
 
-Sentry is optional for v1.0.0 but recommended before paid traffic.
+**Sentry is required for production deployments.**
 
-Minimum setup:
+It is required for all ContribRadar instances before launching to private beta users. Sentry provides:
 
-- Create a Sentry project for Next.js.
-- Store DSN as `SENTRY_DSN`.
-- Connect Vercel integration or configure a log drain if available.
-- Verify a test server error appears in the provider dashboard before launch.
+- Real-time error grouping and deduplication
+- Unhandled exception capture
+- Cron failure alerting
+- Delivery adapter retry and timeout tracking
 
-Do not commit provider tokens or DSNs with secret values to the repository.
+### Setup
+
+1. Create a Sentry project:
+   - Go to [Sentry.io](https://sentry.io)
+   - Create a new project for **Next.js**
+   - Copy the DSN
+
+2. Configure environment:
+   ```bash
+   SENTRY_DSN="https://examplePublicKey@o0.ingest.sentry.io/0"
+   ```
+
+3. Test error capture:
+   ```bash
+   # Simulate an error in a cron run
+   curl -H "Authorization: Bearer $CRON_SECRET" \
+     https://contribradar.vercel.app/api/cron/deliver-alerts?test-error=true
+   ```
+
+4. Verify in Sentry dashboard:
+   - Check "Issues" tab
+   - Confirm cron failure error appears with fingerprinting
+
+### Monitored Events
+
+- **Cron delivery failures**: `/api/cron/deliver-alerts` failures tagged with `cron_failure`
+- **Email delivery failures**: Resend timeout or 5xx errors tagged with `delivery_channel:email`
+- **Slack delivery failures**: Webhook failures tagged with `delivery_channel:slack`
+- **Unhandled exceptions**: All uncaught errors and promise rejections
+
+### Integration with Vercel
+
+Sentry integrates with Vercel to capture runtime logs. Optional but recommended for full visibility:
+
+1. Install [Vercel Sentry integration](https://vercel.com/integrations/sentry)
+2. Connect the Sentry project to your Vercel project
+3. Logs are automatically drained and deduplicated with errors
+
+Do not commit SENTRY_DSN with secret values to the repository. Use Vercel environment variables for production.
 
 ## Alerting Policy
 

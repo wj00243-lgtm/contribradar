@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import type { DeliveryAttempt } from "./delivery";
 
 export type CronRunRecord = {
@@ -72,13 +73,31 @@ export async function failCronRun(
   error: unknown,
   finishedAt = new Date()
 ) {
+  const errorSummary = error instanceof Error ? error.message : String(error);
+
+  // Report critical cron failure to Sentry
+  Sentry.withScope((scope) => {
+    scope.setTag("cron_failure", "true");
+    scope.setTag("run_id", run?.id || "unknown");
+    scope.setContext("cron_run", {
+      status: "failed",
+      duration_ms: run ? Math.max(0, finishedAt.getTime() - run.startedAt.getTime()) : 0,
+      error_summary: errorSummary
+    });
+    scope.setFingerprint(["cron_failure", errorSummary.slice(0, 50)]);
+
+    Sentry.captureException(error, {
+      level: "error"
+    });
+  });
+
   await completeCronRun(client, run, {
     status: "failed",
     usersChecked: 0,
     alertsCreated: 0,
     failures: 1,
     finishedAt,
-    errorSummary: error instanceof Error ? error.message : String(error)
+    errorSummary
   });
 }
 

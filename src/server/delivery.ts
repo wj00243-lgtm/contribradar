@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import type { AlertPreferences } from "./alert-preferences";
 
 export type DeliveryChannel = "email" | "slack";
@@ -124,6 +125,25 @@ async function sendWithRetry(
       };
     } catch (error) {
       lastError = error;
+
+      // Only capture to Sentry on final attempt to avoid duplicate reports
+      if (attempt === maxAttempts) {
+        Sentry.withScope((scope) => {
+          scope.setTag("delivery_channel", adapter.channel);
+          scope.setTag("alert_id", payload.alert.id);
+          scope.setContext("delivery_payload", {
+            user_id: payload.user.id,
+            alert_type: payload.alert.type,
+            channel: adapter.channel,
+            attempts: maxAttempts
+          });
+          scope.setFingerprint(["delivery_failure", adapter.channel, String(lastError instanceof Error ? lastError.message.slice(0, 50) : "unknown")]);
+
+          Sentry.captureException(error, {
+            level: "warning"
+          });
+        });
+      }
     }
   }
 

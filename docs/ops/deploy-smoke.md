@@ -23,7 +23,7 @@ Expected outcomes:
 
 - Public discovery endpoints return `200`.
 - Cron returns `200` when called with a valid `CRON_SECRET`.
-- Cron may return `401` when called without a secret; this still confirms the route is deployed and protected.
+- Cron returns `401` for a wrong bearer token and `503 CRON_AUTH_NOT_CONFIGURED` if `CRON_SECRET` is missing in production.
 - GitHub ingestion cron may return `200` with `skipped: true` when `GITHUB_INGEST_REPOS` is empty.
 
 For GitHub ingestion after a deployment:

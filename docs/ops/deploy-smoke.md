@@ -17,12 +17,14 @@ The script checks:
 - `GET /api/v1/discover/repos`
 - `GET /api/v1/discover/issues`
 - `GET /api/cron/deliver-alerts`
+- `GET /api/cron/ingest-github`
 
 Expected outcomes:
 
 - Public discovery endpoints return `200`.
 - Cron returns `200` when called with a valid `CRON_SECRET`.
 - Cron may return `401` when called without a secret; this still confirms the route is deployed and protected.
+- GitHub ingestion cron may return `200` with `skipped: true` when `GITHUB_INGEST_REPOS` is empty.
 
 For GitHub ingestion after a deployment:
 

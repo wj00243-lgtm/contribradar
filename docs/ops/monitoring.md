@@ -47,6 +47,13 @@ Manual check:
 Invoke-RestMethod -Headers @{ Authorization = "Bearer $env:OPS_API_KEY" } https://contribradar.vercel.app/api/ops/cron-runs
 ```
 
+GitHub ingestion check:
+
+```powershell
+$body = @{ repositories = @("owner/repo") } | ConvertTo-Json
+Invoke-RestMethod -Uri "https://contribradar.vercel.app/api/ops/ingest-github" -Method POST -Headers @{ Authorization = "Bearer $env:OPS_API_KEY"; "Content-Type" = "application/json" } -Body $body
+```
+
 Browser check:
 
 ```text

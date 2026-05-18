@@ -49,6 +49,20 @@ function issue(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function contentResponses() {
+  return [
+    githubResponse({
+      content: Buffer.from("API reference\n\n```ts\nexample()\n```").toString("base64"),
+      encoding: "base64"
+    }),
+    githubResponse({ name: "CONTRIBUTING.md" }),
+    githubResponse([{ name: "bug.yml" }]),
+    githubResponse({ name: "CODE_OF_CONDUCT.md" }),
+    githubResponse({ name: "CODE_OF_CONDUCT.md" }, 404),
+    githubResponse({ name: "CHANGELOG.md" })
+  ];
+}
+
 function client() {
   return {
     repository: {
@@ -66,6 +80,9 @@ describe("GitHub ingestion", () => {
       .fn()
       .mockResolvedValueOnce(githubResponse(repository()))
       .mockResolvedValueOnce(githubResponse([issue()]));
+    for (const response of contentResponses()) {
+      fetcher.mockResolvedValueOnce(response);
+    }
     const db = client();
 
     await ingestGitHubRepositories(db, ["owner/project"], {
@@ -97,6 +114,9 @@ describe("GitHub ingestion", () => {
       .fn()
       .mockResolvedValueOnce(githubResponse(repository()))
       .mockResolvedValueOnce(githubResponse([issue(), issue({ id: 101, pull_request: { url: "pr" } })]));
+    for (const response of contentResponses()) {
+      fetcher.mockResolvedValueOnce(response);
+    }
     const db = client();
 
     const result = await ingestGitHubRepositories(db, ["owner/project"], {
@@ -117,6 +137,8 @@ describe("GitHub ingestion", () => {
           fullName: "owner/project",
           language: "TypeScript",
           topics: ["developer-tools"],
+          metricNewcomerFriendlyScore: 50,
+          metricDocumentationScore: 70,
           readinessScore: expect.any(Number)
         })
       })

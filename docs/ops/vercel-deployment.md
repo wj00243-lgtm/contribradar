@@ -50,6 +50,8 @@ Authorization: Bearer <CRON_SECRET>
 
 When the Vercel project has a `CRON_SECRET` environment variable, Vercel automatically sends it as the bearer `Authorization` header for cron invocations. Cron schedules run in UTC.
 
+Cron endpoints fail closed in production when `CRON_SECRET` is missing. Set the variable before relying on Vercel Cron or production smoke checks.
+
 References:
 
 - [Vercel Cron Jobs](https://vercel.com/docs/cron-jobs/)

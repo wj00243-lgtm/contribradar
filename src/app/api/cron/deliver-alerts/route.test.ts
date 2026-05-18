@@ -37,9 +37,29 @@ describe("GET /api/cron/deliver-alerts", () => {
     expect(body.error.code).toBe("CRON_UNAUTHORIZED");
   });
 
-  it("allows local/test requests when CRON_SECRET is missing", async () => {
+  it("fails closed when CRON_SECRET is missing and local bypass is disabled", async () => {
+    const getUsersForDelivery = vi.fn();
+    const handler = createDeliverAlertsCronHandler({
+      allowMissingCronSecret: false,
+      cronSecret: "",
+      client: { marker: "client" },
+      checkSmartAlerts: vi.fn(),
+      deliverAlerts: vi.fn(),
+      getUsersForDelivery
+    });
+
+    const response = await handler(request());
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.error.code).toBe("CRON_AUTH_NOT_CONFIGURED");
+    expect(getUsersForDelivery).not.toHaveBeenCalled();
+  });
+
+  it("allows explicit local/test requests when CRON_SECRET is missing", async () => {
     const getUsersForDelivery = vi.fn().mockResolvedValue([]);
     const handler = createDeliverAlertsCronHandler({
+      allowMissingCronSecret: true,
       cronSecret: "",
       client: { marker: "client" },
       checkSmartAlerts: vi.fn(),
@@ -118,6 +138,7 @@ describe("GET /api/cron/deliver-alerts", () => {
       attempts: [{ alertId: "alert_1", channel: "email", status: "sent", attempts: 1 }]
     });
     const handler = createDeliverAlertsCronHandler({
+      allowMissingCronSecret: true,
       cronSecret: "",
       client: { marker: "client" },
       checkSmartAlerts,
@@ -166,6 +187,7 @@ describe("GET /api/cron/deliver-alerts", () => {
     const logDeliveryAttempts = vi.fn();
     const deliveryAttempts = [{ alertId: "alert_1", channel: "email", status: "sent", attempts: 1 }];
     const handler = createDeliverAlertsCronHandler({
+      allowMissingCronSecret: true,
       cronSecret: "",
       client: { marker: "client" },
       checkSmartAlerts: vi.fn().mockResolvedValue({

@@ -25,10 +25,31 @@ describe("GET /api/cron/ingest-github", () => {
     expect(body.error.code).toBe("CRON_UNAUTHORIZED");
   });
 
+  it("fails closed when CRON_SECRET is missing and local bypass is disabled", async () => {
+    const ingestRepositories = vi.fn();
+    const GET = createIngestGitHubCronHandler({
+      allowMissingCronSecret: false,
+      cronSecret: "",
+      githubToken: "github_token",
+      repositoryConfig: "",
+      client: {},
+      ingestRepositories,
+      startCronRun: vi.fn()
+    });
+
+    const response = await GET(request());
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.error.code).toBe("CRON_AUTH_NOT_CONFIGURED");
+    expect(ingestRepositories).not.toHaveBeenCalled();
+  });
+
   it("returns a no-op response when no repositories are configured", async () => {
     const ingestRepositories = vi.fn();
     const completeCronRun = vi.fn();
     const GET = createIngestGitHubCronHandler({
+      allowMissingCronSecret: true,
       cronSecret: "",
       githubToken: "github_token",
       repositoryConfig: "",
@@ -72,6 +93,7 @@ describe("GET /api/cron/ingest-github", () => {
   it("rejects oversized repository config", async () => {
     const failCronRun = vi.fn();
     const GET = createIngestGitHubCronHandler({
+      allowMissingCronSecret: true,
       cronSecret: "",
       githubToken: "github_token",
       repositoryConfig: Array.from({ length: 11 }, (_, index) => `owner/repo-${index}`).join(","),
@@ -143,6 +165,7 @@ describe("GET /api/cron/ingest-github", () => {
   it("marks the cron run failed when ingestion throws", async () => {
     const failCronRun = vi.fn();
     const GET = createIngestGitHubCronHandler({
+      allowMissingCronSecret: true,
       cronSecret: "",
       githubToken: "github_token",
       repositoryConfig: "vercel/next.js",

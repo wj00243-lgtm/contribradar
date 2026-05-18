@@ -1,6 +1,7 @@
 import { checkSmartAlerts, type AlertClient } from "@/server/alerts";
 import { deliverAlerts, type DeliverableAlert, type DeliverAlertsInput } from "@/server/delivery";
-import { jsonError, jsonOk } from "@/server/http";
+import { authorizeCronRequest } from "@/server/cron-auth";
+import { jsonOk } from "@/server/http";
 import { logger as defaultLogger, type Logger } from "@/server/logger";
 import {
   completeCronRun,
@@ -26,6 +27,7 @@ type CheckSmartAlerts = typeof checkSmartAlerts;
 type DeliverAlerts = (input: DeliverAlertsInput) => ReturnType<typeof deliverAlerts>;
 
 type Dependencies = {
+  allowMissingCronSecret?: boolean;
   cronSecret?: string;
   client: DeliveryCronClient | unknown;
   checkSmartAlerts: CheckSmartAlerts;
@@ -40,6 +42,7 @@ type Dependencies = {
 };
 
 export function createDeliverAlertsCronHandler({
+  allowMissingCronSecret,
   cronSecret,
   client,
   checkSmartAlerts: checkAlerts,
@@ -53,8 +56,12 @@ export function createDeliverAlertsCronHandler({
   startCronRun: startRun = startCronRun
 }: Dependencies) {
   return async function GET(request: Request) {
-    if (cronSecret && request.headers.get("authorization") !== `Bearer ${cronSecret}`) {
-      return jsonError(401, "CRON_UNAUTHORIZED", "Cron authorization failed.");
+    const authorizationError = authorizeCronRequest(request, cronSecret, {
+      allowMissingSecret: allowMissingCronSecret
+    });
+
+    if (authorizationError) {
+      return authorizationError;
     }
 
     const deliveryClient = client as DeliveryCronClient;

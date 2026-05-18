@@ -1,3 +1,4 @@
+import { authorizeCronRequest } from "@/server/cron-auth";
 import { parseGitHubIngestionRepos } from "@/server/github-ingestion-config";
 import { ingestGitHubRepositories, type GitHubIngestionDbClient } from "@/server/github-ingestion";
 import { jsonError, jsonOk } from "@/server/http";
@@ -9,6 +10,7 @@ import {
 } from "@/server/ops-observability";
 
 type Dependencies = {
+  allowMissingCronSecret?: boolean;
   cronSecret?: string;
   githubToken?: string;
   repositoryConfig?: string | string[] | null;
@@ -21,6 +23,7 @@ type Dependencies = {
 };
 
 export function createIngestGitHubCronHandler({
+  allowMissingCronSecret,
   cronSecret,
   githubToken,
   repositoryConfig,
@@ -32,8 +35,12 @@ export function createIngestGitHubCronHandler({
   startCronRun: startRun = startCronRun
 }: Dependencies) {
   return async function GET(request: Request) {
-    if (cronSecret && request.headers.get("authorization") !== `Bearer ${cronSecret}`) {
-      return jsonError(401, "CRON_UNAUTHORIZED", "Cron authorization failed.");
+    const authorizationError = authorizeCronRequest(request, cronSecret, {
+      allowMissingSecret: allowMissingCronSecret
+    });
+
+    if (authorizationError) {
+      return authorizationError;
     }
 
     const ingestionClient = client as GitHubIngestionDbClient;

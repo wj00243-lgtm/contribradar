@@ -27,12 +27,16 @@ describe("GET /api/cron/ingest-github", () => {
 
   it("returns a no-op response when no repositories are configured", async () => {
     const ingestRepositories = vi.fn();
+    const completeCronRun = vi.fn();
     const GET = createIngestGitHubCronHandler({
       cronSecret: "",
       githubToken: "github_token",
       repositoryConfig: "",
       client: {},
-      ingestRepositories
+      ingestRepositories,
+      startCronRun: vi.fn().mockResolvedValue({ id: "run_1", startedAt: new Date("2026-05-18T09:00:00Z") }),
+      completeCronRun,
+      now: () => new Date("2026-05-18T09:00:02Z")
     });
 
     const response = await GET(request());
@@ -42,6 +46,7 @@ describe("GET /api/cron/ingest-github", () => {
     expect(body).toEqual({
       skipped: true,
       reason: "GITHUB_INGEST_REPOS is empty.",
+      runId: "run_1",
       repositories: [],
       totals: {
         requested: 0,
@@ -51,15 +56,30 @@ describe("GET /api/cron/ingest-github", () => {
       }
     });
     expect(ingestRepositories).not.toHaveBeenCalled();
+    expect(completeCronRun).toHaveBeenCalledWith(
+      {},
+      { id: "run_1", startedAt: new Date("2026-05-18T09:00:00Z") },
+      {
+        status: "succeeded",
+        usersChecked: 0,
+        alertsCreated: 0,
+        failures: 0,
+        finishedAt: new Date("2026-05-18T09:00:02Z")
+      }
+    );
   });
 
   it("rejects oversized repository config", async () => {
+    const failCronRun = vi.fn();
     const GET = createIngestGitHubCronHandler({
       cronSecret: "",
       githubToken: "github_token",
       repositoryConfig: Array.from({ length: 11 }, (_, index) => `owner/repo-${index}`).join(","),
       client: {},
-      ingestRepositories: vi.fn()
+      ingestRepositories: vi.fn(),
+      startCronRun: vi.fn().mockResolvedValue({ id: "run_1", startedAt: new Date("2026-05-18T09:00:00Z") }),
+      failCronRun,
+      now: () => new Date("2026-05-18T09:00:02Z")
     });
 
     const response = await GET(request());
@@ -67,9 +87,16 @@ describe("GET /api/cron/ingest-github", () => {
 
     expect(response.status).toBe(500);
     expect(body.error.code).toBe("GITHUB_INGEST_REPOS_INVALID");
+    expect(failCronRun).toHaveBeenCalledWith(
+      {},
+      { id: "run_1", startedAt: new Date("2026-05-18T09:00:00Z") },
+      expect.any(Error),
+      new Date("2026-05-18T09:00:02Z")
+    );
   });
 
   it("ingests configured repositories for authorized cron calls", async () => {
+    const completeCronRun = vi.fn();
     const ingestRepositories = vi.fn().mockResolvedValue({
       repositories: [{ repository: "vercel/next.js", status: "succeeded", issuesUpserted: 20, readinessScore: 45 }],
       totals: { requested: 1, succeeded: 1, failed: 0, issuesUpserted: 20 }
@@ -79,7 +106,10 @@ describe("GET /api/cron/ingest-github", () => {
       githubToken: "github_token",
       repositoryConfig: "vercel/next.js",
       client: { marker: "client" },
-      ingestRepositories
+      ingestRepositories,
+      startCronRun: vi.fn().mockResolvedValue({ id: "run_1", startedAt: new Date("2026-05-18T09:00:00Z") }),
+      completeCronRun,
+      now: () => new Date("2026-05-18T09:00:05Z")
     });
 
     const response = await GET(request("secret"));
@@ -88,6 +118,7 @@ describe("GET /api/cron/ingest-github", () => {
     expect(response.status).toBe(200);
     expect(body).toEqual({
       skipped: false,
+      runId: "run_1",
       repositories: [{ repository: "vercel/next.js", status: "succeeded", issuesUpserted: 20, readinessScore: 45 }],
       totals: { requested: 1, succeeded: 1, failed: 0, issuesUpserted: 20 }
     });
@@ -95,6 +126,39 @@ describe("GET /api/cron/ingest-github", () => {
       { marker: "client" },
       ["vercel/next.js"],
       { token: "github_token" }
+    );
+    expect(completeCronRun).toHaveBeenCalledWith(
+      { marker: "client" },
+      { id: "run_1", startedAt: new Date("2026-05-18T09:00:00Z") },
+      {
+        status: "succeeded",
+        usersChecked: 1,
+        alertsCreated: 20,
+        failures: 0,
+        finishedAt: new Date("2026-05-18T09:00:05Z")
+      }
+    );
+  });
+
+  it("marks the cron run failed when ingestion throws", async () => {
+    const failCronRun = vi.fn();
+    const GET = createIngestGitHubCronHandler({
+      cronSecret: "",
+      githubToken: "github_token",
+      repositoryConfig: "vercel/next.js",
+      client: { marker: "client" },
+      ingestRepositories: vi.fn().mockRejectedValue(new Error("GitHub timeout")),
+      startCronRun: vi.fn().mockResolvedValue({ id: "run_1", startedAt: new Date("2026-05-18T09:00:00Z") }),
+      failCronRun,
+      now: () => new Date("2026-05-18T09:00:05Z")
+    });
+
+    await expect(GET(request())).rejects.toThrow("GitHub timeout");
+    expect(failCronRun).toHaveBeenCalledWith(
+      { marker: "client" },
+      { id: "run_1", startedAt: new Date("2026-05-18T09:00:00Z") },
+      expect.any(Error),
+      new Date("2026-05-18T09:00:05Z")
     );
   });
 });

@@ -31,6 +31,7 @@ requestPath:/api/cron/deliver-alerts
 Sprint 8 adds database-backed cron observability:
 
 - `cron_runs` stores each `/api/cron/deliver-alerts` run with status, counts, duration, and failure summary.
+- `cron_runs` also stores each `/api/cron/ingest-github` run. For ingestion runs, `usersChecked` means repositories requested and `alertsCreated` means issues upserted.
 - `delivery_attempt_logs` stores per-channel delivery attempts for email and Slack.
 - `GET /api/ops/cron-runs` returns the 10 most recent cron runs with recent delivery attempts.
 - `/ops` provides a protected browser dashboard for operators with the current `OPS_API_KEY`.

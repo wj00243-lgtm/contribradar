@@ -16,6 +16,7 @@
     "qa:cron:db": "node scripts/verify-cron-db.mjs",
     "qa:cron:e2e": "node scripts/test-cron-e2e.mjs",
     "qa:ai:usage": "node scripts/verify-ai-usage.mjs",
+    "qa:github:ingest": "node scripts/verify-github-ingestion.mjs",
     "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",
     "prisma:seed": "tsx prisma/seed.ts"

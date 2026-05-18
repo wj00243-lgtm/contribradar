@@ -191,4 +191,123 @@ describe("GitHub ingestion", () => {
       error: { code: "GITHUB_FETCH_FAILED" }
     });
   });
+
+  it("skips ScoreLog when the client does not provide scoreLog", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(githubResponse(repository()))
+      .mockResolvedValueOnce(githubResponse([issue()]));
+    for (const response of contentResponses()) {
+      fetcher.mockResolvedValueOnce(response);
+    }
+    const db = client(); // no scoreLog property
+
+    // Should not throw
+    const result = await ingestGitHubRepositories(db, ["owner/project"], { fetcher, now });
+
+    expect(result.totals.succeeded).toBe(1);
+  });
+
+  it("writes a ScoreLog with oldScore=null on first ingestion", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(githubResponse(repository()))
+      .mockResolvedValueOnce(githubResponse([issue()]));
+    for (const response of contentResponses()) {
+      fetcher.mockResolvedValueOnce(response);
+    }
+    const scoreLogCreate = vi.fn().mockResolvedValue({});
+    const db = {
+      ...client(),
+      scoreLog: { create: scoreLogCreate }
+    };
+    // upsert returns no readinessScore → simulates first-time ingestion (no prior score)
+    db.repository.upsert.mockResolvedValue({ id: "repo_1", fullName: "owner/project" });
+
+    await ingestGitHubRepositories(db, ["owner/project"], { fetcher, now });
+
+    expect(scoreLogCreate).toHaveBeenCalledOnce();
+    expect(scoreLogCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          repoId: "repo_1",
+          oldScore: null,
+          newScore: expect.any(Number),
+          deltaReason: expect.objectContaining({ explanation: expect.stringContaining("Initial readiness score") }),
+          metricChanges: {}
+        })
+      })
+    );
+  });
+
+  it("writes a ScoreLog when score delta exceeds threshold", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(githubResponse(repository()))
+      .mockResolvedValueOnce(githubResponse([issue()]));
+    for (const response of contentResponses()) {
+      fetcher.mockResolvedValueOnce(response);
+    }
+    const scoreLogCreate = vi.fn().mockResolvedValue({});
+    const db = {
+      ...client(),
+      scoreLog: { create: scoreLogCreate }
+    };
+    // upsert returns a prior readinessScore far from the newly computed value
+    db.repository.upsert.mockResolvedValue({ id: "repo_1", fullName: "owner/project", readinessScore: 10 });
+
+    await ingestGitHubRepositories(db, ["owner/project"], { fetcher, now });
+
+    expect(scoreLogCreate).toHaveBeenCalledOnce();
+    expect(scoreLogCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          repoId: "repo_1",
+          oldScore: 10,
+          newScore: expect.any(Number),
+          deltaReason: expect.objectContaining({ explanation: expect.stringContaining("Score changed from") })
+        })
+      })
+    );
+  });
+
+  it("skips ScoreLog when score delta is below threshold", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(githubResponse(repository()))
+      .mockResolvedValueOnce(githubResponse([issue()]));
+    for (const response of contentResponses()) {
+      fetcher.mockResolvedValueOnce(response);
+    }
+    const scoreLogCreate = vi.fn().mockResolvedValue({});
+    const db = {
+      ...client(),
+      scoreLog: { create: scoreLogCreate }
+    };
+
+    // Compute what the real score will be, then feed back exactly that score
+    // so delta = 0 < 0.5 threshold → no ScoreLog
+    const capturedScore = await (async () => {
+      const plainDb = client();
+      const f = vi
+        .fn()
+        .mockResolvedValueOnce(githubResponse(repository()))
+        .mockResolvedValueOnce(githubResponse([issue()]));
+      for (const response of contentResponses()) {
+        f.mockResolvedValueOnce(response);
+      }
+      const r = await ingestGitHubRepositories(plainDb, ["owner/project"], { fetcher: f, now });
+      return (r.repositories[0] as { readinessScore: number }).readinessScore;
+    })();
+
+    db.repository.upsert.mockResolvedValue({
+      id: "repo_1",
+      fullName: "owner/project",
+      readinessScore: capturedScore
+    });
+
+    await ingestGitHubRepositories(db, ["owner/project"], { fetcher, now });
+
+    expect(scoreLogCreate).not.toHaveBeenCalled();
+  });
 });

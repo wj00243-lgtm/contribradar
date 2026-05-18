@@ -14,7 +14,7 @@ type Dependencies = {
   cronSecret?: string;
   githubToken?: string;
   repositoryConfig?: string | string[] | null;
-  client: GitHubIngestionDbClient | unknown;
+  client: GitHubIngestionDbClient & OpsObservabilityClient;
   completeCronRun?: typeof completeCronRun;
   failCronRun?: typeof failCronRun;
   ingestRepositories: typeof ingestGitHubRepositories;
@@ -43,13 +43,11 @@ export function createIngestGitHubCronHandler({
       return authorizationError;
     }
 
-    const ingestionClient = client as GitHubIngestionDbClient;
-    const observabilityClient = client as OpsObservabilityClient;
-    const run = await startRun(observabilityClient, "ingest-github", now());
+    const run = await startRun(client, "ingest-github", now());
     const repositories = parseGitHubIngestionRepos(repositoryConfig);
 
     if (repositories.length === 0) {
-      await completeRun(observabilityClient, run, {
+      await completeRun(client, run, {
         status: "succeeded",
         usersChecked: 0,
         alertsCreated: 0,
@@ -73,7 +71,7 @@ export function createIngestGitHubCronHandler({
 
     if (repositories.length > 10) {
       const error = new Error("GITHUB_INGEST_REPOS must contain at most 10 repositories.");
-      await failRun(observabilityClient, run, error, now());
+      await failRun(client, run, error, now());
 
       return jsonError(
         500,
@@ -83,11 +81,11 @@ export function createIngestGitHubCronHandler({
     }
 
     try {
-      const result = await ingestRepositories(ingestionClient, repositories, {
+      const result = await ingestRepositories(client, repositories, {
         token: githubToken
       });
 
-      await completeRun(observabilityClient, run, {
+      await completeRun(client, run, {
         status: "succeeded",
         usersChecked: result.totals.requested,
         alertsCreated: result.totals.issuesUpserted,
@@ -101,7 +99,7 @@ export function createIngestGitHubCronHandler({
         ...result
       });
     } catch (error) {
-      await failRun(observabilityClient, run, error, now());
+      await failRun(client, run, error, now());
       throw error;
     }
   };

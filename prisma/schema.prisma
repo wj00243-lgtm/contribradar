@@ -189,6 +189,7 @@ model Alert {
   createdAt  DateTime   @default(now())
   deliveryAttempts DeliveryAttemptLog[]
 
+  @@unique([userId, type, repoId, issueId])
   @@index([userId, isRead, createdAt(sort: Desc)])
   @@map("alerts")
 }

@@ -46,6 +46,10 @@ Required for alert delivery:
 - `SLACK_WEBHOOK_URL`
 - `CRON_SECRET`
 
+Required for protected operator endpoints:
+
+- `OPS_API_KEY`
+
 Recommended manual checks:
 
 - `AUTH_URL` exactly matches the deployed app origin.
@@ -54,6 +58,7 @@ Recommended manual checks:
 - `DATABASE_URL` points at the intended production PostgreSQL database.
 - Vercel Cron is configured from `vercel.json`.
 - `CRON_SECRET` is set so Vercel sends `Authorization: Bearer <CRON_SECRET>` to cron invocations.
+- `OPS_API_KEY` is set before using `/ops` or `/api/ops/*`.
 
 ## Database Checklist
 

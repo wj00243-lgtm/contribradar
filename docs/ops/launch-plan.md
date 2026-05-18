@@ -7,7 +7,7 @@ This is the owner-operated launch sequence for ContribRadar v1.0.0. Steps that r
 1. Create a Vercel project from the GitHub repository.
 2. Set framework preset to Next.js.
 3. Confirm production branch is `master`.
-4. Confirm `vercel.json` is detected and shows the `/api/cron/deliver-alerts` cron.
+4. Confirm `vercel.json` is detected and shows the `/api/cron/deliver-alerts` and `/api/cron/ingest-github` crons.
 5. Enable Vercel Web Analytics from the Vercel project dashboard.
 
 Reference: [Next.js on Vercel](https://vercel.com/docs/frameworks/nextjs)
@@ -40,6 +40,9 @@ Set these on the Vercel production environment:
 - `RESEND_FROM_EMAIL`
 - `SLACK_WEBHOOK_URL`
 - `CRON_SECRET`
+- `OPS_API_KEY`
+- `GITHUB_TOKEN` if scheduled ingestion will call GitHub regularly
+- `GITHUB_INGEST_REPOS` if scheduled ingestion should run against launch repositories
 - `SENTRY_DSN` if Sentry is used
 
 `AUTH_URL` must exactly match the production origin.
@@ -79,6 +82,12 @@ Run:
 
 ```powershell
 bun run qa:smoke -- --base-url <production-url> --cron-secret <CRON_SECRET>
+```
+
+For at least one launch repository, run:
+
+```powershell
+bun run qa:github:ingest -- --base-url <production-url> --repo <owner/repo> --ops-api-key <OPS_API_KEY>
 ```
 
 Then complete:

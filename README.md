@@ -83,6 +83,7 @@ Required for AI recommendations:
 Optional for GitHub ingestion:
 
 - `GITHUB_TOKEN`
+- `GITHUB_INGEST_REPOS`
 
 Required for delivery integrations:
 
@@ -101,7 +102,7 @@ bun run qa:env
 
 Production API routes use Prisma-backed persistence for repository and issue discovery, watchlist CRUD, alerts, usage, and score trends. Development and test runs may still use in-repo seed data in `src/data/seed.ts` for legacy repository browsing flows that need a database-free UI.
 
-Operators can ingest public GitHub repository and issue data into PostgreSQL through `POST /api/ops/ingest-github`. The endpoint is protected by `OPS_API_KEY`; `GITHUB_TOKEN` is optional but recommended to avoid low unauthenticated rate limits.
+Operators can ingest public GitHub repository and issue data into PostgreSQL through `POST /api/ops/ingest-github`. The endpoint is protected by `OPS_API_KEY`; `GITHUB_TOKEN` is optional but recommended to avoid low unauthenticated rate limits. Scheduled ingestion uses `GITHUB_INGEST_REPOS` as a comma- or newline-separated repository list.
 
 Issue discovery and watchlist API routes are DB-first only. Watchlist create/read routes require an Auth.js session and derive ownership from `session.user.id`; request body `userId` values are ignored and anonymous watchlist creation returns `401`.
 
@@ -110,6 +111,7 @@ PostgreSQL and Prisma provide the production schema for users, alerts, usage log
 Alert delivery:
 
 - `GET /api/cron/deliver-alerts` is the scheduler entrypoint for DB-backed smart alert delivery.
+- `GET /api/cron/ingest-github` is the scheduler entrypoint for configured GitHub repository ingestion.
 - When `CRON_SECRET` is set, callers must send `Authorization: Bearer <CRON_SECRET>`.
 - Email delivery uses Resend when `UserSettings.alertPreferences.email` is true.
 - Slack delivery uses the configured webhook when `UserSettings.alertPreferences.slack` is true.

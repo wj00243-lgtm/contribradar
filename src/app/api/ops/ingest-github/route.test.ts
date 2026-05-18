@@ -29,6 +29,23 @@ describe("POST /api/ops/ingest-github", () => {
     expect(body.error.code).toBe("OPS_UNAUTHORIZED");
   });
 
+  it("fails closed when OPS_API_KEY is missing", async () => {
+    const ingestRepositories = vi.fn();
+    const POST = createIngestGitHubPostHandler({
+      opsApiKey: "",
+      githubToken: "github_token",
+      client: {},
+      ingestRepositories
+    });
+
+    const response = await POST(request({ repositories: ["owner/repo"] }));
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.error.code).toBe("OPS_AUTH_NOT_CONFIGURED");
+    expect(ingestRepositories).not.toHaveBeenCalled();
+  });
+
   it("returns 400 when the ingestion request body is invalid", async () => {
     const POST = createIngestGitHubPostHandler({
       opsApiKey: "secret",

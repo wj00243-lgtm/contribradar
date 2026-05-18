@@ -42,6 +42,8 @@ Protect the ops endpoint with:
 OPS_API_KEY=<strong random value>
 ```
 
+Ops endpoints fail closed when `OPS_API_KEY` is missing. A missing key returns `503 OPS_AUTH_NOT_CONFIGURED`; a wrong bearer token returns `401 OPS_UNAUTHORIZED`.
+
 Manual check:
 
 ```powershell

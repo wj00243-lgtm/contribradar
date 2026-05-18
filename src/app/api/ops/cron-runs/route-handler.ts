@@ -1,4 +1,5 @@
-import { jsonError, jsonOk } from "@/server/http";
+import { jsonOk } from "@/server/http";
+import { authorizeOpsRequest } from "@/server/ops-auth";
 import { listCronRuns, type OpsObservabilityClient } from "@/server/ops-observability";
 
 type Dependencies = {
@@ -9,8 +10,10 @@ type Dependencies = {
 
 export function createCronRunsGetHandler({ opsApiKey, client, listCronRuns: getRuns }: Dependencies) {
   return async function GET(request: Request) {
-    if (opsApiKey && request.headers.get("authorization") !== `Bearer ${opsApiKey}`) {
-      return jsonError(401, "OPS_UNAUTHORIZED", "Ops authorization failed.");
+    const authorizationError = authorizeOpsRequest(request, opsApiKey);
+
+    if (authorizationError) {
+      return authorizationError;
     }
 
     const runs = await getRuns(client as OpsObservabilityClient, { limit: 10 });

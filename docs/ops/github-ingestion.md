@@ -117,5 +117,5 @@ Scheduled ingestion writes a durable `cron_runs` record named `ingest-github`. I
 
 - The first ingestion slice upserts repository metadata and open GitHub issues.
 - Pull requests returned by GitHub's issues endpoint are ignored.
-- Readiness scores are deterministic and based on the available GitHub fields. Deep metrics such as CI pass rate, README length, maintainer response time, and contributors are intentionally left conservative until a later enrichment pass.
+- Readiness scores are deterministic and based on the available GitHub fields. GitHub ingestion reads README, CONTRIBUTING, issue template, code of conduct, and changelog signals when available. Deep metrics such as CI pass rate, maintainer response time, and contributors remain conservative until a later enrichment pass.
 - This endpoint does not delete database issues that no longer appear in GitHub's first page of open issues.

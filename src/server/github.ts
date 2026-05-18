@@ -36,9 +36,20 @@ export type GitHubIssuePayload = {
   pull_request?: unknown;
 };
 
+export type GitHubContentSignals = {
+  readmeLength: number;
+  hasContributingGuide: boolean;
+  hasIssueTemplates: boolean;
+  hasCodeOfConduct: boolean;
+  hasChangelog: boolean;
+  hasExamples: boolean;
+  hasApiDocs: boolean;
+};
+
 export type GitHubRepoSnapshot = {
   repository: GitHubRepositoryPayload;
   issues: GitHubIssuePayload[];
+  contentSignals: GitHubContentSignals;
 };
 
 export type GitHubClientOptions = {
@@ -67,17 +78,19 @@ export async function fetchGitHubRepoSnapshot(
   { token, fetcher = fetch, timeoutMs = DEFAULT_GITHUB_TIMEOUT_MS, issueLimit = 20 }: GitHubClientOptions = {}
 ): Promise<GitHubRepoSnapshot> {
   const parsed = parseFullName(fullName);
-  const [repository, issues] = await Promise.all([
+  const [repository, issues, contentSignals] = await Promise.all([
     githubJson<GitHubRepositoryPayload>(`/repos/${parsed.owner}/${parsed.repo}`, { token, fetcher, timeoutMs }),
     githubJson<GitHubIssuePayload[]>(
       `/repos/${parsed.owner}/${parsed.repo}/issues?state=open&per_page=${issueLimit}`,
       { token, fetcher, timeoutMs }
-    )
+    ),
+    fetchContentSignals(parsed, { token, fetcher, timeoutMs })
   ]);
 
   return {
     repository,
-    issues: issues.filter((issue) => issue.pull_request === undefined)
+    issues: issues.filter((issue) => issue.pull_request === undefined),
+    contentSignals
   };
 }
 
@@ -110,4 +123,85 @@ async function githubJson<T>(
   }
 
   return response.json() as Promise<T>;
+}
+
+async function fetchContentSignals(
+  ref: { owner: string; repo: string },
+  options: Required<Pick<GitHubClientOptions, "fetcher" | "timeoutMs">> & Pick<GitHubClientOptions, "token">
+): Promise<GitHubContentSignals> {
+  const [readme, contributing, issueTemplates, codeOfConduct, changelog] = await Promise.all([
+    optionalGithubJson<GitHubContentPayload>(`/repos/${ref.owner}/${ref.repo}/readme`, options),
+    firstExistingContent(ref, ["CONTRIBUTING.md", ".github/CONTRIBUTING.md"], options),
+    optionalGithubJson<unknown>(`/repos/${ref.owner}/${ref.repo}/contents/.github/ISSUE_TEMPLATE`, options),
+    firstExistingContent(ref, ["CODE_OF_CONDUCT.md", ".github/CODE_OF_CONDUCT.md"], options),
+    firstExistingContent(ref, ["CHANGELOG.md", "changelog.md", "CHANGES.md"], options)
+  ]);
+  const readmeText = decodeContent(readme);
+
+  return {
+    readmeLength: readmeText.length,
+    hasContributingGuide: contributing !== null,
+    hasIssueTemplates: issueTemplates !== null,
+    hasCodeOfConduct: codeOfConduct !== null,
+    hasChangelog: changelog !== null,
+    hasExamples: /\bexamples?\b|```/.test(readmeText.toLowerCase()),
+    hasApiDocs: /\bapi\b|reference|sdk/.test(readmeText.toLowerCase())
+  };
+}
+
+async function firstExistingContent(
+  ref: { owner: string; repo: string },
+  paths: string[],
+  options: Required<Pick<GitHubClientOptions, "fetcher" | "timeoutMs">> & Pick<GitHubClientOptions, "token">
+): Promise<unknown | null> {
+  for (const path of paths) {
+    const content = await optionalGithubJson<unknown>(
+      `/repos/${ref.owner}/${ref.repo}/contents/${encodeURIComponent(path).replaceAll("%2F", "/")}`,
+      options
+    );
+
+    if (content !== null) {
+      return content;
+    }
+  }
+
+  return null;
+}
+
+type GitHubContentPayload = {
+  content?: string | null;
+  encoding?: string | null;
+};
+
+async function optionalGithubJson<T>(
+  path: string,
+  { token, fetcher, timeoutMs }: Required<Pick<GitHubClientOptions, "fetcher" | "timeoutMs">> & Pick<GitHubClientOptions, "token">
+): Promise<T | null> {
+  const response = await fetcher(`${GITHUB_API_BASE_URL}${path}`, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "User-Agent": "ContribRadar",
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    signal: AbortSignal.timeout(timeoutMs)
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new GitHubResponseError(`GitHub request failed with status ${response.status} for ${path}.`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+function decodeContent(content: GitHubContentPayload | null): string {
+  if (!content?.content || content.encoding !== "base64") {
+    return "";
+  }
+
+  return Buffer.from(content.content.replace(/\s/g, ""), "base64").toString("utf8");
 }

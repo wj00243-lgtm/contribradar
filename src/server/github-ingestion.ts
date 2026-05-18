@@ -3,6 +3,7 @@ import type { Issue, Repository } from "@/domain/types";
 import {
   fetchGitHubRepoSnapshot,
   GitHubConfigurationError,
+  type GitHubContentSignals,
   GitHubResponseError,
   type GitHubClientOptions,
   type GitHubIssuePayload,
@@ -106,18 +107,22 @@ export async function ingestGitHubRepository(
   const fetcher = options.fetcher ?? fetch;
   const now = options.now ?? new Date();
   const issueLimit = options.issueLimit ?? 20;
-  const { repository, issues: issueRecords } = await fetchGitHubRepoSnapshot(`${parsedRef.owner}/${parsedRef.repo}`, {
+  const {
+    repository,
+    issues: issueRecords,
+    contentSignals
+  } = await fetchGitHubRepoSnapshot(`${parsedRef.owner}/${parsedRef.repo}`, {
     fetcher,
     token: options.token,
     issueLimit,
     timeoutMs: options.timeoutMs
   });
-  const domainRepository = toDomainRepository(repository, issueRecords, now);
+  const domainRepository = toDomainRepository(repository, issueRecords, contentSignals, now);
   const repoScore = scoreRepositoryReadiness(domainRepository);
   const repoRecord = await client.repository.upsert({
     where: { githubId: String(repository.id) },
-    create: toRepositoryWrite(repository, repoScore.score, repoScore.confidence),
-    update: toRepositoryWrite(repository, repoScore.score, repoScore.confidence)
+    create: toRepositoryWrite(repository, contentSignals, repoScore.score, repoScore.confidence),
+    update: toRepositoryWrite(repository, contentSignals, repoScore.score, repoScore.confidence)
   });
 
   for (const issue of issueRecords) {
@@ -149,7 +154,12 @@ function parseRepositoryRef(repositoryRef: string): { owner: string; repo: strin
   return { owner, repo };
 }
 
-function toRepositoryWrite(repository: GitHubRepositoryPayload, score: number, confidence: number) {
+function toRepositoryWrite(
+  repository: GitHubRepositoryPayload,
+  contentSignals: GitHubContentSignals,
+  score: number,
+  confidence: number
+) {
   return {
     githubId: String(repository.id),
     fullName: repository.full_name,
@@ -171,10 +181,16 @@ function toRepositoryWrite(repository: GitHubRepositoryPayload, score: number, c
     scoreConfidence: confidence,
     scoreCalculatedAt: new Date(),
     metricMaintainerResponseHours: null,
-    metricNewcomerFriendlyScore: null,
+    metricNewcomerFriendlyScore:
+      (contentSignals.hasContributingGuide ? 25 : 0) +
+      (contentSignals.hasIssueTemplates ? 25 : 0),
     metricCodeHealthScore: null,
     metricCommunityActivityScore: null,
-    metricDocumentationScore: null
+    metricDocumentationScore:
+      (contentSignals.readmeLength > 500 ? 30 : 0) +
+      (contentSignals.hasChangelog ? 20 : 0) +
+      (contentSignals.hasApiDocs ? 25 : 0) +
+      (contentSignals.hasExamples ? 25 : 0)
   };
 }
 
@@ -206,6 +222,7 @@ function toIssueWrite(issue: GitHubIssuePayload, repoId: string, score: number, 
 function toDomainRepository(
   repository: GitHubRepositoryPayload,
   issues: GitHubIssuePayload[],
+  contentSignals: GitHubContentSignals,
   now: Date
 ): Repository {
   const labels = issues.flatMap((issue) => labelNames(issue.labels)).map((label) => label.toLowerCase());
@@ -232,20 +249,20 @@ function toDomainRepository(
     updatedAt: repository.updated_at,
     metrics: {
       maintainerResponseHours: null,
-      hasContributingGuide: false,
-      hasIssueTemplates: false,
+      hasContributingGuide: contentSignals.hasContributingGuide,
+      hasIssueTemplates: contentSignals.hasIssueTemplates,
       hasGoodFirstIssueLabel,
       averagePrMergeDays: null,
       ciPassRate: null,
       testCoveragePercent: null,
       openCriticalBugs: labels.filter((label) => label.includes("critical") || label.includes("security")).length,
-      hasCodeOfConduct: false,
+      hasCodeOfConduct: contentSignals.hasCodeOfConduct,
       commitsPerDay: activeDays <= 30 ? 1 / activeDays : 0,
       activeContributors30d: 0,
-      readmeLength: 0,
-      hasChangelog: false,
-      hasApiDocs: false,
-      hasExamples: false
+      readmeLength: contentSignals.readmeLength,
+      hasChangelog: contentSignals.hasChangelog,
+      hasApiDocs: contentSignals.hasApiDocs,
+      hasExamples: contentSignals.hasExamples
     }
   };
 }

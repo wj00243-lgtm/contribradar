@@ -105,6 +105,8 @@ Invoke-RestMethod `
 
 If `GITHUB_INGEST_REPOS` is empty, the cron returns `200` with `skipped: true` and does not call GitHub.
 
+Scheduled ingestion writes a durable `cron_runs` record named `ingest-github`. In `/ops`, `usersChecked` represents repositories requested, `alertsCreated` represents issues upserted, and `failures` represents failed repositories.
+
 ## Notes
 
 - The first ingestion slice upserts repository metadata and open GitHub issues.

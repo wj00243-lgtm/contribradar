@@ -213,8 +213,8 @@ export function CronRunsDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recent delivery cron runs</CardTitle>
-            <CardDescription>The API returns the 10 newest runs and up to 50 recent delivery attempts per run.</CardDescription>
+            <CardTitle>Recent cron runs</CardTitle>
+            <CardDescription>The API returns the 10 newest delivery and ingestion cron runs. Delivery runs include up to 50 recent attempts.</CardDescription>
           </CardHeader>
           <CardContent>
             {runs.length === 0 ? (

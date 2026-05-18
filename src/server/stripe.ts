@@ -8,7 +8,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
 
 export const stripe = process.env.STRIPE_SECRET_KEY 
   ? new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: "2025-02-24.acacia", // Use the latest API version or your account's version
+      apiVersion: "2026-04-22.dahlia", // Use the latest API version or your account's version
       appInfo: {
         name: "ContribRadar",
         version: "1.0.0"

@@ -5,9 +5,11 @@ import { createBillingPortalPostHandler } from "./route-handler";
 
 const prisma = new PrismaClient();
 
-export const POST = createBillingPortalPostHandler({
-  auth,
-  client: prisma,
-  stripe: getStripe(),
-  appUrl: process.env.NEXT_PUBLIC_APP_URL
-});
+export async function POST(request: Request) {
+  return createBillingPortalPostHandler({
+    auth,
+    client: prisma,
+    stripe: getStripe(),
+    appUrl: process.env.NEXT_PUBLIC_APP_URL
+  })(request);
+}

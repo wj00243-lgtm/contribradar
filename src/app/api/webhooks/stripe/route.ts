@@ -4,8 +4,10 @@ import { createStripeWebhookPostHandler } from "./route-handler";
 
 const prisma = new PrismaClient();
 
-export const POST = createStripeWebhookPostHandler({
-  client: prisma,
-  stripe: getStripe(),
-  webhookSecret: process.env.STRIPE_WEBHOOK_SECRET
-});
+export async function POST(request: Request) {
+  return createStripeWebhookPostHandler({
+    client: prisma,
+    stripe: getStripe(),
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET
+  })(request);
+}

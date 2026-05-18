@@ -39,7 +39,7 @@ export function createStripeWebhookPostHandler({ client, stripe, webhookSecret }
             const customerId = session.customer as string;
             const subscriptionId = session.subscription as string;
             
-            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
 
             await client.$transaction([
               client.user.update({
@@ -74,7 +74,7 @@ export function createStripeWebhookPostHandler({ client, stripe, webhookSecret }
 
         case "customer.subscription.updated":
         case "customer.subscription.deleted": {
-          const subscription = event.data.object as Stripe.Subscription;
+          const subscription = event.data.object as any;
           
           const subRecord = await client.subscription.findUnique({
             where: { stripeSubscriptionId: subscription.id }

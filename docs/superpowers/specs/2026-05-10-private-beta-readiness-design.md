@@ -20,7 +20,7 @@ Prepare ContribRadar for private beta by giving operators a readable production 
 
 ## Architecture
 
-The existing `GET /api/ops/cron-runs` endpoint remains the source of truth. A client-side `/ops` dashboard asks the operator for `OPS_API_KEY`, fetches recent runs with a bearer token, and renders shadcn/ui-compatible cards and tables.
+The existing `GET /api/ops/cron-runs` endpoint remains the source of truth for delivery history. A client-side `/ops` dashboard asks the operator for `OPS_API_KEY`, fetches recent runs with a bearer token, and renders shadcn/ui-compatible cards and tables.
 
 No secret is embedded in the page. The dashboard has no write actions.
 

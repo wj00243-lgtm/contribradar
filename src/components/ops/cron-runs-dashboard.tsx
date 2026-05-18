@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshCw, ShieldCheck } from "lucide-react";
+import { GitBranch, RefreshCw, ShieldCheck, UploadCloud } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,12 @@ import {
   summarizeCronRuns,
   type CronRunView
 } from "./cron-runs-formatting";
+import {
+  formatIngestionSummary,
+  getIngestionStatusLabel,
+  parseRepositoryInput,
+  type GitHubIngestionResponse
+} from "./github-ingestion-formatting";
 
 type OpsResponse = {
   runs: CronRunView[];
@@ -24,7 +30,12 @@ export function CronRunsDashboard() {
   const [runs, setRuns] = useState<CronRunView[]>([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [repositoryInput, setRepositoryInput] = useState("");
+  const [ingestionResult, setIngestionResult] = useState<GitHubIngestionResponse | null>(null);
+  const [ingestionError, setIngestionError] = useState("");
+  const [isIngesting, setIsIngesting] = useState(false);
   const summary = useMemo(() => summarizeCronRuns(runs), [runs]);
+  const repositoriesToIngest = useMemo(() => parseRepositoryInput(repositoryInput), [repositoryInput]);
 
   async function loadRuns(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
@@ -60,6 +71,40 @@ export function CronRunsDashboard() {
     }
   }
 
+  async function ingestRepositories(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsIngesting(true);
+    setIngestionError("");
+    setIngestionResult(null);
+
+    try {
+      const response = await fetch("/api/ops/ingest-github", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${opsKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ repositories: repositoriesToIngest })
+      });
+
+      if (response.status === 401) {
+        setIngestionError("OPS_API_KEY rejected. Check the key before ingesting GitHub data.");
+        return;
+      }
+
+      if (!response.ok) {
+        setIngestionError(`GitHub ingestion returned ${response.status}. Check production logs and retry.`);
+        return;
+      }
+
+      setIngestionResult((await response.json()) as GitHubIngestionResponse);
+    } catch (ingestError) {
+      setIngestionError(ingestError instanceof Error ? ingestError.message : "Unable to ingest repositories.");
+    } finally {
+      setIsIngesting(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-zinc-950 px-6 py-8 text-zinc-100">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -68,19 +113,19 @@ export function CronRunsDashboard() {
             <p className="text-sm font-medium text-emerald-300">ContribRadar Ops</p>
             <h1 className="mt-3 text-2xl font-semibold tracking-normal text-white">Private beta readiness</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-              Inspect production alert delivery cron runs before inviting private beta users.
+              Inspect production alert delivery cron runs and manually ingest GitHub repository data.
             </p>
           </div>
           <Badge variant="outline" className="gap-2 px-3 py-1">
             <ShieldCheck className="h-4 w-4" />
-            Read-only
+            OPS protected
           </Badge>
         </header>
 
         <Card>
           <CardHeader>
             <CardTitle>Ops access</CardTitle>
-            <CardDescription>Enter the current `OPS_API_KEY` value from Vercel to load protected cron history.</CardDescription>
+            <CardDescription>Enter the current `OPS_API_KEY` value from Vercel to load protected ops data.</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="flex flex-col gap-3 sm:flex-row" onSubmit={loadRuns}>
@@ -97,6 +142,64 @@ export function CronRunsDashboard() {
               </Button>
             </form>
             {error ? <p className="mt-3 text-sm text-red-300">{error}</p> : null}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <GitBranch className="h-5 w-5" />
+              GitHub ingestion
+            </CardTitle>
+            <CardDescription>
+              Enter up to 10 `owner/repo` values separated by commas or new lines. This upserts repository metadata and open issues.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <form className="space-y-3" onSubmit={ingestRepositories}>
+              <textarea
+                className="min-h-28 w-full resize-y rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-500"
+                onChange={(event) => setRepositoryInput(event.target.value)}
+                placeholder="vercel/next.js&#10;prisma/prisma"
+                value={repositoryInput}
+              />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-zinc-500">{repositoriesToIngest.length}/10 repositories queued</p>
+                <Button
+                  disabled={isIngesting || opsKey.trim().length === 0 || repositoriesToIngest.length === 0 || repositoriesToIngest.length > 10}
+                  type="submit"
+                >
+                  <UploadCloud className={isIngesting ? "h-4 w-4 animate-pulse" : "h-4 w-4"} />
+                  Ingest repositories
+                </Button>
+              </div>
+            </form>
+
+            {ingestionError ? <p className="text-sm text-red-300">{ingestionError}</p> : null}
+            {ingestionResult ? (
+              <div className="rounded-md border border-zinc-800 bg-zinc-900 p-4">
+                <p className="text-sm font-medium text-white">{formatIngestionSummary(ingestionResult)}</p>
+                <div className="mt-3 grid gap-2 md:grid-cols-2">
+                  {ingestionResult.repositories.map((result) => (
+                    <div key={result.repository} className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-white">{result.repository}</span>
+                        <Badge variant={result.status === "failed" ? "destructive" : "default"}>
+                          {getIngestionStatusLabel(result.status)}
+                        </Badge>
+                      </div>
+                      {result.status === "succeeded" ? (
+                        <p className="mt-2 text-xs text-zinc-400">
+                          {result.issuesUpserted ?? 0} issues upserted, score {result.readinessScore ?? "unknown"}
+                        </p>
+                      ) : (
+                        <p className="mt-2 text-xs text-red-300">{result.error?.message ?? "Ingestion failed."}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 

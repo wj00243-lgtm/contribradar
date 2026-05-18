@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { jsonError, jsonOk } from "@/server/http";
 import { ingestGitHubRepositories, type GitHubIngestionDbClient } from "@/server/github-ingestion";
+import { authorizeOpsRequest } from "@/server/ops-auth";
 
 const requestSchema = z.object({
   repositories: z.array(z.string().min(1)).min(1).max(10)
@@ -21,8 +22,10 @@ export function createIngestGitHubPostHandler({
   ingestRepositories
 }: Dependencies) {
   return async function POST(request: Request) {
-    if (opsApiKey && request.headers.get("authorization") !== `Bearer ${opsApiKey}`) {
-      return jsonError(401, "OPS_UNAUTHORIZED", "Ops authorization failed.");
+    const authorizationError = authorizeOpsRequest(request, opsApiKey);
+
+    if (authorizationError) {
+      return authorizationError;
     }
 
     const body = await readJson(request);

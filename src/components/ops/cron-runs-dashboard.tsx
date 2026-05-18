@@ -55,6 +55,12 @@ export function CronRunsDashboard() {
         return;
       }
 
+      if (response.status === 503) {
+        setRuns([]);
+        setError("OPS_API_KEY is not configured on the deployment. Add it in Vercel Environment Variables and redeploy.");
+        return;
+      }
+
       if (!response.ok) {
         setRuns([]);
         setError(`Ops API returned ${response.status}. Check production logs before retrying.`);
@@ -89,6 +95,11 @@ export function CronRunsDashboard() {
 
       if (response.status === 401) {
         setIngestionError("OPS_API_KEY rejected. Check the key before ingesting GitHub data.");
+        return;
+      }
+
+      if (response.status === 503) {
+        setIngestionError("OPS_API_KEY is not configured on the deployment. Add it in Vercel Environment Variables and redeploy.");
         return;
       }
 

@@ -39,7 +39,7 @@ describe("GET /api/ops/cron-runs", () => {
     expect(listCronRuns).toHaveBeenCalledWith({ marker: "client" }, { limit: 10 });
   });
 
-  it("allows local/test requests when OPS_API_KEY is missing", async () => {
+  it("fails closed when OPS_API_KEY is missing", async () => {
     const listCronRuns = vi.fn().mockResolvedValue([]);
     const GET = createCronRunsGetHandler({
       opsApiKey: "",
@@ -48,8 +48,10 @@ describe("GET /api/ops/cron-runs", () => {
     });
 
     const response = await GET(request());
+    const body = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(listCronRuns).toHaveBeenCalledOnce();
+    expect(response.status).toBe(503);
+    expect(body.error.code).toBe("OPS_AUTH_NOT_CONFIGURED");
+    expect(listCronRuns).not.toHaveBeenCalled();
   });
 });

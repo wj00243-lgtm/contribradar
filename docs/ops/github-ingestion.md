@@ -56,6 +56,26 @@ Expected response:
 }
 ```
 
+## End-to-End QA
+
+After a deployment, verify that ingestion writes to the database and the ingested data appears through public discovery APIs:
+
+```powershell
+bun run qa:github:ingest -- --base-url https://contribradar.vercel.app --repo vercel/next.js --ops-api-key $env:OPS_API_KEY
+```
+
+The script checks:
+
+- `POST /api/ops/ingest-github`
+- `GET /api/v1/discover/repos?limit=100`
+- `GET /api/v1/discover/issues?limit=100`
+
+Expected outcomes:
+
+- GitHub ingestion returns `200`.
+- At least one requested repository appears in repository discovery.
+- Issue discovery returns DB-backed issues after ingestion.
+
 ## Notes
 
 - The first ingestion slice upserts repository metadata and open GitHub issues.

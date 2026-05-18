@@ -23,3 +23,9 @@ Expected outcomes:
 - Public discovery endpoints return `200`.
 - Cron returns `200` when called with a valid `CRON_SECRET`.
 - Cron may return `401` when called without a secret; this still confirms the route is deployed and protected.
+
+For GitHub ingestion after a deployment:
+
+```powershell
+bun run qa:github:ingest -- --base-url https://your-production-url --repo owner/repo --ops-api-key $env:OPS_API_KEY
+```

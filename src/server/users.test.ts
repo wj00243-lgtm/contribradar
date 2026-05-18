@@ -64,11 +64,6 @@ describe("ensureUserFromSession", () => {
         experienceLevel: "beginner",
         weeklyHours: 5,
         plan: "team",
-        alertPreferences: {
-          email: false,
-          slack: false,
-          digest: "weekly"
-        },
         settings: {
           create: {
             alertPreferences: {

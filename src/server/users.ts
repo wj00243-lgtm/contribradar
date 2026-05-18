@@ -52,11 +52,6 @@ export async function ensureUserFromSession(client: UserClient, sessionUser: Ses
       experienceLevel: "beginner",
       weeklyHours: 5,
       plan: normalizePlan(sessionUser.plan),
-      alertPreferences: {
-        email: false,
-        slack: false,
-        digest: "weekly"
-      },
       settings: {
         create: {
           alertPreferences: {

@@ -69,7 +69,6 @@ model User {
   experienceLevel  String
   weeklyHours      Int
   plan             Plan        @default(free)
-  alertPreferences Json
   createdAt        DateTime    @default(now())
   watchlists       Watchlist[]
   alerts           Alert[]

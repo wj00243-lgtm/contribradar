@@ -6,6 +6,7 @@ import {
   canUseAiRecommendations,
   getAiRecommendationUsage,
   getUsagePeriod,
+  getNextMonthPeriod,
   incrementAiRecommendationUsage
 } from "./usage";
 
@@ -110,6 +111,46 @@ describe("usage service", () => {
       active: 10,
       limit: 10,
       remaining: 0
+    });
+  });
+
+  describe("month boundary edge cases", () => {
+    it("calculates correct period at month start (2026-05-01 00:00 UTC)", () => {
+      expect(getUsagePeriod(new Date("2026-05-01T00:00:00Z"))).toBe("2026-05");
+    });
+
+    it("calculates correct period at month end (2026-05-31 23:59 UTC)", () => {
+      expect(getUsagePeriod(new Date("2026-05-31T23:59:59Z"))).toBe("2026-05");
+    });
+
+    it("handles year boundary (2025-12-31 23:59 UTC)", () => {
+      expect(getUsagePeriod(new Date("2025-12-31T23:59:59Z"))).toBe("2025-12");
+      expect(getUsagePeriod(new Date("2026-01-01T00:00:00Z"))).toBe("2026-01");
+    });
+
+    it("calculates next month correctly (December -> January year transition)", () => {
+      expect(getNextMonthPeriod(new Date("2025-12-15T10:00:00Z"))).toBe("2026-01");
+    });
+
+    it("calculates next month correctly (regular month transition)", () => {
+      expect(getNextMonthPeriod(new Date("2026-05-15T10:00:00Z"))).toBe("2026-06");
+    });
+
+    it("handles short month transition (February -> March)", () => {
+      expect(getNextMonthPeriod(new Date("2026-02-28T10:00:00Z"))).toBe("2026-03");
+    });
+
+    it("quota reset uses UTC consistently across timezone scenarios", async () => {
+      // User in UTC+8 (Singapore) on May 1 at 23:59 local = May 1 15:59 UTC
+      const sgTime = new Date("2026-05-01T15:59:00Z");
+      // User in UTC-8 (Los Angeles) on April 30 at 23:59 local = May 1 07:59 UTC
+      const laTime = new Date("2026-05-01T07:59:00Z");
+
+      expect(getUsagePeriod(sgTime)).toBe("2026-05");
+      expect(getUsagePeriod(laTime)).toBe("2026-05");
+
+      // Both users should have same period despite local date difference
+      expect(getUsagePeriod(sgTime)).toBe(getUsagePeriod(laTime));
     });
   });
 });

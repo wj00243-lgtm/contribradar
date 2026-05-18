@@ -79,6 +79,17 @@ export function getUsagePeriod(date = new Date()): string {
   return `${year}-${month}`;
 }
 
+/**
+ * Returns the next month period in YYYY-MM format.
+ * Handles UTC month transitions correctly (e.g., Dec -> Jan year boundary).
+ */
+export function getNextMonthPeriod(date = new Date()): string {
+  const nextMonth = new Date(date);
+  nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
+
+  return getUsagePeriod(nextMonth);
+}
+
 export async function getAiRecommendationUsage(
   client: UsageClient,
   userId: string,

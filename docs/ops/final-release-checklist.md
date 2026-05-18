@@ -49,6 +49,7 @@ Use this checklist before the first production launch and before major Pro featu
 - [ ] Run `bun run qa:smoke -- --base-url <production-url> --cron-secret <CRON_SECRET>`.
 - [ ] Vercel Cron is visible in Project Settings.
 - [ ] Vercel Cron logs show `GET /api/cron/deliver-alerts`.
+- [ ] Vercel Cron logs show `GET /api/cron/ingest-github` or the route returns `skipped: true` when `GITHUB_INGEST_REPOS` is empty.
 - [ ] Runtime logs contain structured JSON events for cron failures.
 - [ ] `OPS_API_KEY` is set and `GET /api/ops/cron-runs` returns recent cron history.
 - [ ] `/ops` loads recent cron history with the current `OPS_API_KEY`.

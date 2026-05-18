@@ -39,9 +39,14 @@ for (const file of requiredFiles) {
 
 const vercelConfig = JSON.parse(readFileSync("vercel.json", "utf8"));
 const hasDeliveryCron = Array.isArray(vercelConfig.crons) && vercelConfig.crons.some((cron) => cron.path === "/api/cron/deliver-alerts");
+const hasGitHubIngestionCron = Array.isArray(vercelConfig.crons) && vercelConfig.crons.some((cron) => cron.path === "/api/cron/ingest-github");
 
 if (!hasDeliveryCron) {
   failures.push("vercel.json must configure /api/cron/deliver-alerts");
+}
+
+if (!hasGitHubIngestionCron) {
+  failures.push("vercel.json must configure /api/cron/ingest-github");
 }
 
 const envExample = readFileSync(".env.example", "utf8");

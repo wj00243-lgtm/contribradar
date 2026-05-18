@@ -12,8 +12,11 @@ Required:
 Optional but recommended:
 
 - `GITHUB_TOKEN`
+- `GITHUB_INGEST_REPOS`
 
 `GITHUB_TOKEN` is used only server-side by the ingestion endpoint. Public repositories can be ingested without it, but unauthenticated GitHub API limits are low.
+
+`GITHUB_INGEST_REPOS` is a comma-separated or newline-separated list used by the scheduled ingestion cron. Keep it to 10 repositories or fewer.
 
 ## Manual Ingestion
 
@@ -75,6 +78,32 @@ Expected outcomes:
 - GitHub ingestion returns `200`.
 - At least one requested repository appears in repository discovery.
 - Issue discovery returns DB-backed issues after ingestion.
+
+## Scheduled Ingestion
+
+Vercel Cron calls:
+
+```text
+GET /api/cron/ingest-github
+```
+
+The route uses `CRON_SECRET`, `GITHUB_TOKEN`, and `GITHUB_INGEST_REPOS`.
+
+Example Vercel env value:
+
+```text
+GITHUB_INGEST_REPOS=vercel/next.js,prisma/prisma
+```
+
+Manual cron check:
+
+```powershell
+Invoke-RestMethod `
+  -Uri "https://contribradar.vercel.app/api/cron/ingest-github" `
+  -Headers @{ Authorization = "Bearer $env:CRON_SECRET" }
+```
+
+If `GITHUB_INGEST_REPOS` is empty, the cron returns `200` with `skipped: true` and does not call GitHub.
 
 ## Notes
 

@@ -1,8 +1,8 @@
 import { hasFeature } from "@/lib/features";
 import {
-  canUseAiRecommendations,
+  consumeAiRecommendationQuota,
+  refundAiRecommendationQuota,
   getAiRecommendationUsage,
-  incrementAiRecommendationUsage,
   type AiRecommendationUsage
 } from "@/server/usage";
 
@@ -58,8 +58,8 @@ export type RecommendationClient = {
   repository: {
     findMany: (args: unknown) => Promise<RepositoryRecord[]>;
   };
-  usageLog: Parameters<typeof canUseAiRecommendations>[0]["usageLog"];
-  userSettings?: Parameters<typeof canUseAiRecommendations>[0]["userSettings"];
+  usageLog: Parameters<typeof consumeAiRecommendationQuota>[0]["usageLog"];
+  userSettings?: Parameters<typeof consumeAiRecommendationQuota>[0]["userSettings"];
 };
 
 export type RecommendationContext = {
@@ -211,18 +211,23 @@ export async function generateAiRepoRecommendations(
   }
 
   const now = options.now ?? new Date();
-  const hasQuota = await canUseAiRecommendations(client, userId, now);
+  const hasConsumed = await consumeAiRecommendationQuota(client, userId, 1, now);
 
-  if (!hasQuota) {
+  if (!hasConsumed) {
     throw new RecommendationQuotaError("AI recommendation quota is exhausted for this month.");
   }
 
-  const payload = await (options.generator ?? defaultRecommendationGenerator)(context, {
-    apiKey: options.apiKey,
-    model: options.model
-  });
+  let payload;
+  try {
+    payload = await (options.generator ?? defaultRecommendationGenerator)(context, {
+      apiKey: options.apiKey,
+      model: options.model
+    });
+  } catch (error) {
+    await refundAiRecommendationQuota(client, userId, 1, now);
+    throw error;
+  }
 
-  await incrementAiRecommendationUsage(client, userId, 1, now);
   const usage = await getAiRecommendationUsage(client, userId, now);
 
   return {

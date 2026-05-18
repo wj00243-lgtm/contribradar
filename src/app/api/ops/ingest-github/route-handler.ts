@@ -11,7 +11,7 @@ const requestSchema = z.object({
 type Dependencies = {
   opsApiKey?: string;
   githubToken?: string;
-  client: GitHubIngestionDbClient | unknown;
+  client: GitHubIngestionDbClient;
   ingestRepositories: typeof ingestGitHubRepositories;
 };
 
@@ -40,7 +40,7 @@ export function createIngestGitHubPostHandler({
       return jsonError(400, "INVALID_INGESTION_REQUEST", "Request body is invalid.", parsed.error.flatten());
     }
 
-    const result = await ingestRepositories(client as GitHubIngestionDbClient, parsed.data.repositories, {
+    const result = await ingestRepositories(client, parsed.data.repositories, {
       token: githubToken
     });
 

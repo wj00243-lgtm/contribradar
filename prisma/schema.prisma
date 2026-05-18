@@ -69,8 +69,9 @@ model User {
   experienceLevel  String
   weeklyHours      Int
   plan             Plan        @default(free)
-  alertPreferences Json
   createdAt        DateTime    @default(now())
+  stripeCustomerId String?     @unique
+  subscription     Subscription?
   watchlists       Watchlist[]
   alerts           Alert[]
   contributions    Contribution[]
@@ -189,6 +190,7 @@ model Alert {
   createdAt  DateTime   @default(now())
   deliveryAttempts DeliveryAttemptLog[]
 
+  @@unique([userId, type, repoId, issueId])
   @@index([userId, isRead, createdAt(sort: Desc)])
   @@map("alerts")
 }
@@ -269,6 +271,7 @@ model UserSettings {
   alertPreferences Json
   aiQuota          Int      @default(20)
   maxAlerts        Int      @default(10)
+  isLifetimeBeta   Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -301,4 +304,19 @@ model Contribution {
   @@index([repoId, openedAt(sort: Desc)])
   @@index([issueId])
   @@map("contributions")
+}
+
+model Subscription {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeSubscriptionId   String   @unique
+  stripePriceId          String
+  status                 String
+  currentPeriodEnd       DateTime
+  cancelAtPeriodEnd      Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("subscriptions")
 }

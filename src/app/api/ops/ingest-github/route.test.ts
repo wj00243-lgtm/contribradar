@@ -18,7 +18,7 @@ describe("POST /api/ops/ingest-github", () => {
     const POST = createIngestGitHubPostHandler({
       opsApiKey: "secret",
       githubToken: "github_token",
-      client: {},
+      client: {} as any,
       ingestRepositories: vi.fn()
     });
 
@@ -34,7 +34,7 @@ describe("POST /api/ops/ingest-github", () => {
     const POST = createIngestGitHubPostHandler({
       opsApiKey: "",
       githubToken: "github_token",
-      client: {},
+      client: {} as any,
       ingestRepositories
     });
 
@@ -50,7 +50,7 @@ describe("POST /api/ops/ingest-github", () => {
     const POST = createIngestGitHubPostHandler({
       opsApiKey: "secret",
       githubToken: "github_token",
-      client: {},
+      client: {} as any,
       ingestRepositories: vi.fn()
     });
 
@@ -69,7 +69,7 @@ describe("POST /api/ops/ingest-github", () => {
     const POST = createIngestGitHubPostHandler({
       opsApiKey: "secret",
       githubToken: "github_token",
-      client: { marker: "client" },
+      client: { marker: "client" } as any,
       ingestRepositories
     });
 

@@ -25,8 +25,7 @@ async function main() {
       skillVector: { languages: ["Python", "Rust", "TypeScript"], topics: ["documentation", "cli"] },
       experienceLevel: "beginner",
       weeklyHours: 5,
-      plan: "free",
-      alertPreferences: { quietMode: false }
+      plan: "free"
     }
   });
 

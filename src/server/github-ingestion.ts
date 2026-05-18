@@ -11,13 +11,40 @@ import {
 } from "./github";
 
 const STALE_ISSUE_DAYS = 60;
+const SCORE_LOG_MIN_DELTA = 0.5;
+
+type RepositoryUpsertData = ReturnType<typeof toRepositoryWrite>;
+type IssueUpsertData = ReturnType<typeof toIssueWrite>;
+
+// Prisma Json fields require values compatible with InputJsonValue.
+// Using a branded alias keeps call-sites readable without importing Prisma internals.
+type JsonObject = { [key: string]: string | number | boolean | null | JsonObject | JsonObject[] };
+
+type ScoreLogCreateData = {
+  repoId: string;
+  oldScore: number | null;
+  newScore: number;
+  deltaReason: JsonObject;
+  metricChanges: JsonObject;
+};
 
 export type GitHubIngestionDbClient = {
   repository: {
-    upsert: (args: any) => Promise<{ id: string; fullName?: string }>;
+    upsert: (args: {
+      where: { githubId: string };
+      create: RepositoryUpsertData;
+      update: RepositoryUpsertData;
+    }) => Promise<{ id: string; fullName?: string; readinessScore?: unknown }>;
   };
   issue: {
-    upsert: (args: any) => Promise<unknown>;
+    upsert: (args: {
+      where: { githubId: string };
+      create: IssueUpsertData;
+      update: IssueUpsertData;
+    }) => Promise<unknown>;
+  };
+  scoreLog?: {
+    create: (args: { data: ScoreLogCreateData }) => Promise<unknown>;
   };
 };
 
@@ -119,11 +146,14 @@ export async function ingestGitHubRepository(
   });
   const domainRepository = toDomainRepository(repository, issueRecords, contentSignals, now);
   const repoScore = scoreRepositoryReadiness(domainRepository);
+  const repoWrite = toRepositoryWrite(repository, contentSignals, repoScore.score, repoScore.confidence);
   const repoRecord = await client.repository.upsert({
     where: { githubId: String(repository.id) },
-    create: toRepositoryWrite(repository, contentSignals, repoScore.score, repoScore.confidence),
-    update: toRepositoryWrite(repository, contentSignals, repoScore.score, repoScore.confidence)
+    create: repoWrite,
+    update: repoWrite
   });
+
+  await maybeWriteScoreLog(client, repoRecord, repoScore.score);
 
   for (const issue of issueRecords) {
     const domainIssue = toDomainIssue(issue, repoRecord.id, now);
@@ -362,4 +392,54 @@ function formatIngestionError(error: unknown): { code: string; message: string }
     code: "GITHUB_INGESTION_FAILED",
     message: error instanceof Error ? error.message : "GitHub ingestion failed."
   };
+}
+
+async function maybeWriteScoreLog(
+  client: GitHubIngestionDbClient,
+  repoRecord: { id: string; readinessScore?: unknown },
+  newScore: number
+): Promise<void> {
+  if (!client.scoreLog) {
+    return;
+  }
+
+  const oldScore = toStoredScore(repoRecord.readinessScore);
+  const delta = oldScore === null ? newScore : Math.abs(newScore - oldScore);
+
+  if (oldScore !== null && delta < SCORE_LOG_MIN_DELTA) {
+    return;
+  }
+
+  await client.scoreLog.create({
+    data: {
+      repoId: repoRecord.id,
+      oldScore,
+      newScore,
+      deltaReason: {
+        explanation:
+          oldScore === null
+            ? `Initial readiness score: ${Math.round(newScore)}.`
+            : `Score changed from ${Math.round(oldScore)} to ${Math.round(newScore)} (Δ ${Math.round(delta > 0 ? delta : -delta)}).`
+      },
+      metricChanges: {}
+    }
+  });
+}
+
+function toStoredScore(value: unknown): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "object" && "toNumber" in value && typeof (value as { toNumber: unknown }).toNumber === "function") {
+    return (value as { toNumber: () => number }).toNumber();
+  }
+
+  const parsed = Number(value);
+
+  return Number.isNaN(parsed) ? null : parsed;
 }

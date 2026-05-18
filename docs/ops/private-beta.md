@@ -62,9 +62,58 @@ No-go:
 - `/api/ops/cron-runs` returns unauthorized with the known current key.
 - Cron has repeated failed runs without a known external-provider cause.
 
+## Provisioning Beta Users
+
+Before inviting, assign the correct plan in production:
+
+```powershell
+# Using Prisma Studio (interactive, recommended)
+$env:DATABASE_URL='<production-connection-string>'; bunx prisma studio
+
+# Or direct SQL
+UPDATE users SET plan = 'pro' WHERE githubId = '<github_id>';
+```
+
+Track invited users in `docs/ops/beta-users.md`.
+
+## Feedback Channel
+
+Choose and document one primary channel before sending invites:
+
+| Channel | Best For | Setup Effort |
+|---|---|---|
+| **GitHub Discussions** | Public repos, async, searchable | Low |
+| **Discord** | Real-time, community building | Medium |
+| **Email** | Minimal friction, private | Low |
+
+Minimum viable loop:
+1. Provide a short feedback template (what did you try, what happened, what did you expect).
+2. Review feedback weekly during beta.
+3. Acknowledge within 48 hours; close the loop within 7 days.
+4. Triage items as `bug`, `feature-request`, `ux-improvement`, or `docs`.
+
+## Support Escalation
+
+| Level | Contact | Response Time | Handles |
+|---|---|---|---|
+| L1 | Owner email | 24h | General questions, auth issues |
+| L2 | Owner email | 48h | Pro feature bugs, data issues |
+| L3 | — | — | Production incidents (Vercel/DB provider) |
+
 ## Rollback
 
 1. Use Vercel Instant Rollback to restore the previous stable deployment.
 2. Re-run production smoke.
 3. Open `/ops` and confirm cron history is still readable.
 4. Do not rollback a migration unless a written database rollback plan exists.
+
+## Beta Exit Criteria
+
+Before moving from private beta to public:
+
+- [ ] At least 5 active beta users with sustained usage.
+- [ ] No critical bugs unaddressed for 7+ days.
+- [ ] Cron delivery success rate > 95% over the last 14 days.
+- [ ] AI recommendation quota and feature gates validated with real Pro users.
+- [ ] Feedback volume has slowed; major themes documented.
+- [ ] Public onboarding docs and FAQ are ready.

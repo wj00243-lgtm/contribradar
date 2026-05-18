@@ -19,7 +19,7 @@ The end state must include:
 
 ## Non-Goals
 
-- No OpenAI API calls.
+- No Gemini API calls.
 - No Resend email delivery.
 - No Slack webhook delivery.
 - No billing or Stripe integration.
@@ -138,7 +138,7 @@ Actions:
    AUTH_URL="http://localhost:3000"
    AUTH_GITHUB_ID=""
    AUTH_GITHUB_SECRET=""
-   OPENAI_API_KEY=""
+   GEMINI_API_KEY=""
    ```
 
 2. Add `src/auth.ts`:

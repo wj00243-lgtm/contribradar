@@ -14,6 +14,14 @@ ContribRadar is a contribution intelligence layer for GitHub repositories. It he
 - Auth.js v5 with GitHub OAuth
 - shadcn/ui-compatible components
 
+## Onboarding
+
+New developer? Start here:
+
+```text
+docs/onboarding.md
+```
+
 ## Local Setup
 
 Prerequisites:
@@ -141,6 +149,7 @@ docs/qa/sprint-3-production-readiness.md
 Deployment operations:
 
 ```text
+docs/onboarding.md
 docs/ops/vercel-deployment.md
 docs/ops/deploy-smoke.md
 docs/ops/final-release-checklist.md

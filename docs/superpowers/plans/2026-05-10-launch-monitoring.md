@@ -4,7 +4,7 @@
 
 **Goal:** Prepare ContribRadar v1.0.0 launch operations, monitoring, production deploy execution, and release tagging without introducing product behavior changes.
 
-**Architecture:** Keep all external-account operations as explicit runbooks because Vercel, database provider, GitHub OAuth, OpenAI, Resend, Slack, Sentry, and tag publishing require owner credentials. Add local validation scripts and docs that make the launch path reproducible after credentials are available.
+**Architecture:** Keep all external-account operations as explicit runbooks because Vercel, database provider, GitHub OAuth, Gemini, Resend, Slack, Sentry, and tag publishing require owner credentials. Add local validation scripts and docs that make the launch path reproducible after credentials are available.
 
 **Tech Stack:** Next.js 15, Prisma, Vercel, PostgreSQL, Vercel Analytics/Log Drains, optional Sentry, Git tags, Node.js ops scripts.
 
@@ -19,7 +19,7 @@
 
 - [x] Set package version to `1.0.0`.
 - [x] Document launch sequence from Vercel project creation through deploy smoke.
-- [x] Include external account owner steps for Vercel, DB provider, OAuth, OpenAI, Resend, Slack, and monitoring.
+- [x] Include external account owner steps for Vercel, DB provider, OAuth, Gemini, Resend, Slack, and monitoring.
 
 ### Task 2: Monitoring Runbook
 

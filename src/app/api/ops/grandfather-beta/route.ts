@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { authorizeOpsRequest } from "@/server/ops-auth";
 
 const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
-  const authHeader = request.headers.get("authorization");
-
-  if (!process.env.OPS_API_KEY) {
-    return NextResponse.json({ error: "OPS_AUTH_NOT_CONFIGURED" }, { status: 503 });
-  }
-
-  if (authHeader !== `Bearer ${process.env.OPS_API_KEY}`) {
-    return NextResponse.json({ error: "OPS_UNAUTHORIZED" }, { status: 401 });
+  const authError = authorizeOpsRequest(request, process.env.OPS_API_KEY);
+  if (authError) {
+    return authError;
   }
 
   try {

@@ -15,6 +15,11 @@ Set these variables in the Vercel project before deploying production:
 - `SLACK_WEBHOOK_URL`
 - `CRON_SECRET`
 
+Optional for scheduled GitHub ingestion:
+
+- `GITHUB_TOKEN`
+- `GITHUB_INGEST_REPOS`
+
 `AUTH_URL` must exactly match the deployed origin. The GitHub OAuth callback must be:
 
 ```text
@@ -23,13 +28,21 @@ Set these variables in the Vercel project before deploying production:
 
 ## Cron
 
-`vercel.json` schedules this endpoint daily at 08:00 UTC:
+`vercel.json` schedules alert delivery daily at 08:00 UTC:
 
 ```text
 GET /api/cron/deliver-alerts
 ```
 
 The route uses DB-backed smart alerts and delivery preferences. When `CRON_SECRET` is set, manual calls must include:
+
+`vercel.json` also schedules GitHub ingestion daily at 09:00 UTC:
+
+```text
+GET /api/cron/ingest-github
+```
+
+This route is a no-op unless `GITHUB_INGEST_REPOS` is set.
 
 ```text
 Authorization: Bearer <CRON_SECRET>

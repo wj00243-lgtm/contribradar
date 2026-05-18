@@ -46,30 +46,39 @@ if (!ingestionOk) {
   failures += 1;
 }
 
-const reposResponse = await fetch(`${baseUrl}/api/v1/discover/repos?limit=100`);
-const reposBody = await readJson(reposResponse);
-const discoveredRepos = Array.isArray(reposBody?.repos) ? reposBody.repos : [];
-
 for (const repository of args.repositories) {
-  const repoFound = discoveredRepos.some((repo) => repo.fullName === repository);
+  const scoreResponse = await fetch(`${baseUrl}/api/v1/discover/repos/${encodeRepositoryPath(repository)}/score`);
+  const scoreBody = await readJson(scoreResponse);
+  const repo = scoreBody?.repository;
+  const repoFound = scoreResponse.status === 200 && repo?.fullName === repository;
 
-  console.log(`${repoFound ? "PASS" : "FAIL"} Repository visible in discovery: ${repository}`);
+  console.log(`${repoFound ? "PASS" : "FAIL"} Repository score visible in discovery: ${repository}`);
 
   if (!repoFound) {
+    console.log(JSON.stringify(scoreBody, null, 2));
+    failures += 1;
+    continue;
+  }
+
+  const ingestedRepository = ingestionBody?.repositories?.find((item) => item.repository === repository);
+  const expectedIssueCount = ingestedRepository?.issuesUpserted ?? 0;
+
+  if (expectedIssueCount === 0) {
+    console.log(`SKIP Issue discovery for ${repository}: ingestion reported 0 issues upserted`);
+    continue;
+  }
+
+  const issuesResponse = await fetch(`${baseUrl}/api/v1/discover/issues?repo_id=${encodeURIComponent(repo.id)}&limit=100`);
+  const issuesBody = await readJson(issuesResponse);
+  const issueCount = Array.isArray(issuesBody?.issues) ? issuesBody.issues.length : 0;
+  const issueOk = issuesResponse.status === 200 && issueCount > 0;
+
+  console.log(`${issueOk ? "PASS" : "FAIL"} Issue discovery for ${repository}: ${issuesResponse.status} (${issueCount} shown)`);
+
+  if (!issueOk) {
+    console.log(JSON.stringify(issuesBody, null, 2));
     failures += 1;
   }
-}
-
-const issuesResponse = await fetch(`${baseUrl}/api/v1/discover/issues?limit=100`);
-const issuesBody = await readJson(issuesResponse);
-const discoveredIssues = Array.isArray(issuesBody?.issues) ? issuesBody.issues : [];
-const issueCount = discoveredIssues.length;
-const issueOk = issuesResponse.status === 200 && issueCount > 0;
-
-console.log(`${issueOk ? "PASS" : "FAIL"} Issue discovery returns DB issues: ${issuesResponse.status} (${issueCount} shown)`);
-
-if (!issueOk) {
-  failures += 1;
 }
 
 if (failures > 0) {
@@ -85,6 +94,16 @@ function postJson(url, body) {
     },
     body: JSON.stringify(body)
   });
+}
+
+function encodeRepositoryPath(repository) {
+  const [owner, repo, extra] = repository.split("/");
+
+  if (!owner || !repo || extra) {
+    return encodeURIComponent(repository);
+  }
+
+  return `${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
 }
 
 async function readJson(response) {

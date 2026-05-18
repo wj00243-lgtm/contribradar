@@ -76,14 +76,14 @@ bun run qa:smoke -- --base-url https://contribradar.vercel.app --cron-secret $en
 The script checks:
 
 - `POST /api/ops/ingest-github`
-- `GET /api/v1/discover/repos?limit=100`
-- `GET /api/v1/discover/issues?limit=100`
+- `GET /api/v1/discover/repos/<owner>/<repo>/score`
+- `GET /api/v1/discover/issues?repo_id=<repo-id>&limit=100` when ingestion upserts issues
 
 Expected outcomes:
 
 - GitHub ingestion returns `200`.
-- At least one requested repository appears in repository discovery.
-- Issue discovery returns DB-backed issues after ingestion.
+- Each requested repository is readable through the repository score API.
+- Repositories with upserted issues return DB-backed issue discovery results for that repository.
 
 ## Scheduled Ingestion
 

@@ -50,10 +50,10 @@ Expected output:
 
 For a controlled beta test, set the user's `aiQuota` to a low number in `user_settings`, then generate recommendations until the quota is exhausted.
 
-```sql
-UPDATE user_settings
-SET "aiQuota" = 1
-WHERE "userId" = '<user_id>';
+```powershell
+$env:DATABASE_URL="<production-connection-string>"
+bun run ops:user:quota -- --user="<email-or-github-id-or-user-id>" --ai-quota=1
+bun run ops:user:quota -- --user="<email-or-github-id-or-user-id>" --ai-quota=1 --apply
 ```
 
 Expected:
@@ -64,10 +64,8 @@ Expected:
 
 Reset after test:
 
-```sql
-UPDATE user_settings
-SET "aiQuota" = 20
-WHERE "userId" = '<user_id>';
+```powershell
+bun run ops:user:quota -- --user="<email-or-github-id-or-user-id>" --ai-quota=20 --apply
 ```
 
 ## Error Checks

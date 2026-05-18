@@ -18,6 +18,7 @@
     "qa:ai:usage": "node scripts/verify-ai-usage.mjs",
     "qa:github:ingest": "node scripts/verify-github-ingestion.mjs",
     "ops:user:plan": "node scripts/set-user-plan.mjs",
+    "ops:user:quota": "node scripts/set-user-quota.mjs",
     "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",
     "prisma:seed": "tsx prisma/seed.ts"

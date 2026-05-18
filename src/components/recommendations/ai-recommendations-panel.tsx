@@ -28,6 +28,13 @@ type RecommendationResponse = {
   usage: UsageMeter;
 };
 
+type ApiErrorResponse = {
+  error?: {
+    code?: string;
+    message?: string;
+  };
+};
+
 type AiRecommendationsPanelProps = {
   userPlan?: string | null;
 };
@@ -46,10 +53,10 @@ export function AiRecommendationsPanel({ userPlan }: AiRecommendationsPanelProps
       const response = await fetch("/api/v1/recommendations", {
         method: "POST"
       });
-      const body = await response.json();
+      const body = (await response.json()) as RecommendationResponse | ApiErrorResponse;
 
       if (!response.ok) {
-        setError(body.error?.message ?? "Recommendations could not be generated.");
+        setError(formatRecommendationError(body as ApiErrorResponse));
         return;
       }
 
@@ -57,7 +64,7 @@ export function AiRecommendationsPanel({ userPlan }: AiRecommendationsPanelProps
       setRecommendations(payload.recommendations);
       setUsage(payload.usage);
     } catch {
-      setError("Recommendations could not be generated.");
+      setError("Recommendations could not be generated. Check network connectivity and retry.");
     } finally {
       setIsLoading(false);
     }
@@ -75,11 +82,7 @@ export function AiRecommendationsPanel({ userPlan }: AiRecommendationsPanelProps
               </CardTitle>
               <CardDescription>Personalized Pro picks from your skills, activity, and watchlists.</CardDescription>
             </div>
-            {usage ? (
-              <Badge variant="outline">
-                {usage.used}/{usage.limit}
-              </Badge>
-            ) : null}
+            <Badge variant="outline">{usage ? `${usage.used}/${usage.limit}` : "0/20"}</Badge>
           </div>
         </CardHeader>
         <CardContent>
@@ -89,11 +92,11 @@ export function AiRecommendationsPanel({ userPlan }: AiRecommendationsPanelProps
 
           {error ? <p className="mt-3 rounded border border-red-900 bg-red-950/40 p-3 text-sm text-red-200">{error}</p> : null}
 
-          {usage ? (
-            <p className="mt-3 text-xs text-zinc-500">
-              {usage.remaining} AI recommendation calls remaining for {usage.period}.
-            </p>
-          ) : null}
+          <p className="mt-3 text-xs text-zinc-500">
+            {usage
+              ? `${usage.remaining} AI recommendation calls remaining for ${usage.period}.`
+              : "Pro users get 20 AI recommendation calls per month."}
+          </p>
 
           {recommendations.length > 0 ? (
             <div className="mt-4 space-y-3">
@@ -118,3 +121,24 @@ export function AiRecommendationsPanel({ userPlan }: AiRecommendationsPanelProps
     </ProGate>
   );
 }
+
+function formatRecommendationError(body: ApiErrorResponse): string {
+  switch (body.error?.code) {
+    case "GEMINI_NOT_CONFIGURED":
+      return "Gemini is not configured. Set GEMINI_API_KEY in Vercel and redeploy.";
+    case "GEMINI_RESPONSE_INVALID":
+      return "Gemini returned an unusable response. Retry once; if it repeats, review the prompt and Vercel logs.";
+    case "AI_RECOMMENDATION_QUOTA_EXHAUSTED":
+      return "Monthly AI recommendation quota is exhausted.";
+    case "PRO_FEATURE_REQUIRED":
+      return "AI recommendations require a Pro plan. Logout and login again after plan changes.";
+    case "AUTH_REQUIRED":
+      return "Login is required to generate AI recommendations.";
+    default:
+      return body.error?.message ?? "Recommendations could not be generated.";
+  }
+}
+
+export const __testables = {
+  formatRecommendationError
+};

@@ -21,7 +21,8 @@
     "ops:user:quota": "node scripts/set-user-quota.mjs",
     "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.7.0",

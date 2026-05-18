@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { LockKeyhole } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -36,8 +37,8 @@ export function ProGate({ userPlan, requiredPlan = "pro", featureName, fallback,
           <LockKeyhole className="mx-auto mb-3 h-6 w-6 text-emerald-300" />
           <h3 className="text-base font-semibold text-zinc-50">Pro feature</h3>
           <p className="mt-2 text-sm text-zinc-400">Upgrade to unlock this workflow and keep your contributor pipeline moving.</p>
-          <Button className="mt-4" size="sm">
-            Upgrade
+          <Button className="mt-4" size="sm" asChild>
+            <Link href="/pricing">Upgrade</Link>
           </Button>
         </div>
       </div>

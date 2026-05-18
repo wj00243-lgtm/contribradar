@@ -119,7 +119,7 @@ Core local flow:
 1. Login with GitHub.
 2. Browse repository discovery.
 3. Create a watchlist.
-4. Open `/ops` to confirm the page loads. It returns `401` unless `OPS_API_KEY` is set.
+4. Open `/ops` to confirm the page loads. Protected ops APIs return `503` when `OPS_API_KEY` is not configured and `401` when the entered key is wrong.
 
 ## 8. Verification
 
@@ -183,7 +183,8 @@ bun run qa:cron:e2e
 | `DATABASE_URL` errors | PostgreSQL is not running | Start the Docker container from Step 2. |
 | GitHub login fails | OAuth callback mismatch | Match GitHub callback URL to `AUTH_URL`. |
 | Prisma client missing | Client was not generated | Run `bunx prisma generate`. |
-| `/ops` returns `401` | `OPS_API_KEY` is set and missing from request | Use the browser form or set the key locally. |
+| `/ops` returns `503` | `OPS_API_KEY` is missing from the environment | Set the key locally or in Vercel and restart/redeploy. |
+| `/ops` returns `401` | The entered `OPS_API_KEY` does not match the environment value | Use the current key from the operator password manager / Vercel env. |
 | AI recommendations return `503` | `GEMINI_API_KEY` is missing | Add a valid key and restart dev server. |
 | Port 3000 is in use | Another process is running | Use `bun run dev -- --port 3001`. |
 

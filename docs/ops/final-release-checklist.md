@@ -23,6 +23,8 @@ Use this checklist before the first production launch and before major Pro featu
 - [ ] `SLACK_WEBHOOK_URL` is set for Slack alert delivery.
 - [ ] `CRON_SECRET` is set and at least 16 random characters.
 - [ ] `OPS_API_KEY` is set and stored only in the operator password manager / Vercel env.
+- [ ] `GITHUB_TOKEN` is set if scheduled ingestion will call GitHub regularly.
+- [ ] `GITHUB_INGEST_REPOS` is set to 10 or fewer `owner/repo` values, or intentionally left empty for no-op scheduled ingestion.
 - [ ] `SENTRY_DSN` is set if Sentry is enabled.
 
 ## Database
@@ -38,6 +40,7 @@ Use this checklist before the first production launch and before major Pro featu
 - [ ] GitHub login succeeds.
 - [ ] Repository discovery returns DB-backed results.
 - [ ] Issue discovery returns DB-backed results.
+- [ ] GitHub ingestion QA passes for at least one launch repository: `bun run qa:github:ingest -- --base-url <production-url> --repo <owner/repo> --ops-api-key <OPS_API_KEY>`.
 - [ ] Watchlist create requires authentication.
 - [ ] AI recommendations work for a Pro user and are blocked for Free users.
 - [ ] Smart alerts create DB-backed alert rows.

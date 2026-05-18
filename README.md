@@ -92,6 +92,10 @@ Required for delivery integrations:
 - `SLACK_WEBHOOK_URL`
 - `CRON_SECRET`
 
+Required for protected operator endpoints:
+
+- `OPS_API_KEY`
+
 Validate required production variables:
 
 ```powershell
@@ -112,7 +116,7 @@ Alert delivery:
 
 - `GET /api/cron/deliver-alerts` is the scheduler entrypoint for DB-backed smart alert delivery.
 - `GET /api/cron/ingest-github` is the scheduler entrypoint for configured GitHub repository ingestion.
-- When `CRON_SECRET` is set, callers must send `Authorization: Bearer <CRON_SECRET>`.
+- Cron endpoints fail closed in production when `CRON_SECRET` is missing. Callers must send `Authorization: Bearer <CRON_SECRET>`.
 - Email delivery uses Resend when `UserSettings.alertPreferences.email` is true.
 - Slack delivery uses the configured webhook when `UserSettings.alertPreferences.slack` is true.
 

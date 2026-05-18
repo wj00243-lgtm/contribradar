@@ -3,10 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   AI_RECOMMENDATION_FEATURE,
   canCreateAlert,
-  canUseAiRecommendations,
+  consumeAiRecommendationQuota,
+  refundAiRecommendationQuota,
   getAiRecommendationUsage,
-  getUsagePeriod,
-  incrementAiRecommendationUsage
+  getUsagePeriod
 } from "./usage";
 
 describe("usage service", () => {
@@ -53,44 +53,87 @@ describe("usage service", () => {
   it("blocks AI recommendations when the monthly quota is exhausted", async () => {
     const client = {
       usageLog: {
-        findUnique: vi.fn().mockResolvedValue({ count: 20 })
+        findUnique: vi.fn().mockResolvedValue({ count: 20 }),
+        updateMany: vi.fn(),
+        create: vi.fn()
       },
       userSettings: {
         findUnique: vi.fn().mockResolvedValue({ aiQuota: 20 })
       }
     };
 
-    await expect(canUseAiRecommendations(client, "user_1", new Date("2026-05-09"))).resolves.toBe(false);
+    await expect(consumeAiRecommendationQuota(client, "user_1", 1, new Date("2026-05-09"))).resolves.toBe(false);
+    expect(client.usageLog.updateMany).not.toHaveBeenCalled();
+    expect(client.usageLog.create).not.toHaveBeenCalled();
   });
 
-  it("increments AI recommendation usage with a monthly upsert", async () => {
-    const upsert = vi.fn().mockResolvedValue({ count: 4 });
+  it("creates a new usage log when no usage exists and quota is available", async () => {
     const client = {
       usageLog: {
-        upsert
+        findUnique: vi.fn().mockResolvedValue(null),
+        updateMany: vi.fn(),
+        create: vi.fn().mockResolvedValue({})
+      },
+      userSettings: {
+        findUnique: vi.fn().mockResolvedValue({ aiQuota: 20 })
       }
     };
 
-    await incrementAiRecommendationUsage(client, "user_1", 2, new Date("2026-05-09"));
-
-    expect(upsert).toHaveBeenCalledWith({
-      where: {
-        userId_feature_period: {
-          userId: "user_1",
-          feature: AI_RECOMMENDATION_FEATURE,
-          period: "2026-05"
-        }
-      },
-      create: {
+    await expect(consumeAiRecommendationQuota(client, "user_1", 1, new Date("2026-05-09"))).resolves.toBe(true);
+    expect(client.usageLog.create).toHaveBeenCalledWith({
+      data: {
         userId: "user_1",
         feature: AI_RECOMMENDATION_FEATURE,
         period: "2026-05",
-        count: 2
+        count: 1
+      }
+    });
+    expect(client.usageLog.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("increments existing usage atomically when quota is available", async () => {
+    const client = {
+      usageLog: {
+        findUnique: vi.fn().mockResolvedValue({ count: 10 }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        create: vi.fn()
       },
-      update: {
-        count: {
-          increment: 2
-        }
+      userSettings: {
+        findUnique: vi.fn().mockResolvedValue({ aiQuota: 20 })
+      }
+    };
+
+    await expect(consumeAiRecommendationQuota(client, "user_1", 2, new Date("2026-05-09"))).resolves.toBe(true);
+    expect(client.usageLog.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: "user_1",
+        feature: AI_RECOMMENDATION_FEATURE,
+        period: "2026-05",
+        count: { lte: 18 }
+      },
+      data: {
+        count: { increment: 2 }
+      }
+    });
+  });
+
+  it("refunds AI recommendation usage accurately", async () => {
+    const client = {
+      usageLog: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 })
+      }
+    };
+
+    await refundAiRecommendationQuota(client, "user_1", 2, new Date("2026-05-09"));
+    expect(client.usageLog.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: "user_1",
+        feature: AI_RECOMMENDATION_FEATURE,
+        period: "2026-05",
+        count: { gte: 2 }
+      },
+      data: {
+        count: { decrement: 2 }
       }
     });
   });

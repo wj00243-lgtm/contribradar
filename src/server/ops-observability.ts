@@ -7,12 +7,12 @@ export type CronRunRecord = {
 
 export type OpsObservabilityClient = {
   cronRun?: {
-    create?: (args: unknown) => Promise<CronRunRecord>;
-    update?: (args: unknown) => Promise<unknown>;
-    findMany?: (args: unknown) => Promise<unknown[]>;
+    create?: (args: any) => Promise<CronRunRecord>;
+    update?: (args: any) => Promise<unknown>;
+    findMany?: (args: any) => Promise<unknown[]>;
   };
   deliveryAttemptLog?: {
-    createMany?: (args: unknown) => Promise<unknown>;
+    createMany?: (args: any) => Promise<unknown>;
   };
 };
 

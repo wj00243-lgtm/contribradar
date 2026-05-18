@@ -17,9 +17,12 @@
     "qa:cron:e2e": "node scripts/test-cron-e2e.mjs",
     "qa:ai:usage": "node scripts/verify-ai-usage.mjs",
     "qa:github:ingest": "node scripts/verify-github-ingestion.mjs",
+    "ops:user:plan": "node scripts/set-user-plan.mjs",
+    "ops:user:quota": "node scripts/set-user-quota.mjs",
     "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.7.0",
@@ -36,6 +39,7 @@
     "prisma": "^6.7.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "stripe": "^22.1.1",
     "tailwind-merge": "^3.5.0",
     "zod": "^3.24.4"
   },

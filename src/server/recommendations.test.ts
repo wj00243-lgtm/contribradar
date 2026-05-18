@@ -74,7 +74,8 @@ function baseClient() {
     },
     usageLog: {
       findUnique: vi.fn().mockResolvedValue(null),
-      upsert: vi.fn().mockResolvedValue({ count: 1 })
+      create: vi.fn().mockResolvedValue({}),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 })
     },
     userSettings: {
       findUnique: vi.fn().mockResolvedValue({ aiQuota: 20 })
@@ -141,7 +142,8 @@ describe("generateAiRepoRecommendations", () => {
     const client = createClient({
       usageLog: {
         findUnique: vi.fn().mockResolvedValue({ count: 20 }),
-        upsert: vi.fn().mockResolvedValue({ count: 20 })
+        create: vi.fn(),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 })
       },
       userSettings: {
         findUnique: vi.fn().mockResolvedValue({ aiQuota: 20 })
@@ -154,9 +156,11 @@ describe("generateAiRepoRecommendations", () => {
         generator: vi.fn()
       })
     ).rejects.toBeInstanceOf(RecommendationQuotaError);
+    expect(client.usageLog.updateMany).not.toHaveBeenCalled();
+    expect(client.usageLog.create).not.toHaveBeenCalled();
   });
 
-  it("generates recommendations and increments usage only after success", async () => {
+  it("generates recommendations and consumes usage successfully", async () => {
     const client = createClient();
     const generator = vi.fn().mockResolvedValue({
       recommendations: [
@@ -177,7 +181,22 @@ describe("generateAiRepoRecommendations", () => {
 
     expect(result.recommendations).toHaveLength(1);
     expect(result.usage.used).toBe(1);
-    expect(client.usageLog.upsert).toHaveBeenCalledOnce();
+    expect(client.usageLog.create).toHaveBeenCalledOnce(); // called because findUnique returns null
     expect(generator).toHaveBeenCalledWith(expect.objectContaining({ candidates: expect.any(Array) }), expect.objectContaining({ apiKey: "test-key" }));
+  });
+
+  it("refunds quota when the AI generator fails", async () => {
+    const client = createClient();
+    const generator = vi.fn().mockRejectedValue(new Error("Gemini timeout"));
+
+    await expect(
+      generateAiRepoRecommendations(client, "user_1", {
+        apiKey: "test-key",
+        generator
+      })
+    ).rejects.toThrow("Gemini timeout");
+
+    expect(client.usageLog.create).toHaveBeenCalledOnce(); // it was consumed
+    expect(client.usageLog.updateMany).toHaveBeenCalledOnce(); // it was refunded via updateMany with decrement
   });
 });

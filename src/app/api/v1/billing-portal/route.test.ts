@@ -1,0 +1,69 @@
+import { describe, expect, it, vi } from "vitest";
+import { createBillingPortalPostHandler } from "./route-handler";
+import type Stripe from "stripe";
+
+function request() {
+  return new Request("http://localhost/api/v1/billing-portal", { method: "POST" });
+}
+
+describe("POST /api/v1/billing-portal", () => {
+  it("returns 401 when no session is present", async () => {
+    const POST = createBillingPortalPostHandler({
+      auth: vi.fn().mockResolvedValue(null),
+      client: {},
+      stripe: {} as Stripe
+    });
+
+    const response = await POST(request());
+    expect(response.status).toBe(401);
+  });
+
+  it("returns 404 when user has no stripe customer id", async () => {
+    const mockClient = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({ stripeCustomerId: null })
+      }
+    };
+
+    const POST = createBillingPortalPostHandler({
+      auth: vi.fn().mockResolvedValue({ user: { id: "user_1" } }),
+      client: mockClient,
+      stripe: {} as Stripe
+    });
+
+    const response = await POST(request());
+    expect(response.status).toBe(404);
+  });
+
+  it("returns 200 and a portal URL for a valid user with a stripe customer id", async () => {
+    const mockStripe = {
+      billingPortal: {
+        sessions: {
+          create: vi.fn().mockResolvedValue({ url: "https://billing.stripe.com/123" })
+        }
+      }
+    };
+
+    const mockClient = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({ stripeCustomerId: "cus_123" })
+      }
+    };
+
+    const POST = createBillingPortalPostHandler({
+      auth: vi.fn().mockResolvedValue({ user: { id: "user_1" } }),
+      client: mockClient,
+      stripe: mockStripe as unknown as Stripe,
+      appUrl: "http://localhost:3000"
+    });
+
+    const response = await POST(request());
+    
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ url: "https://billing.stripe.com/123" });
+    expect(mockStripe.billingPortal.sessions.create).toHaveBeenCalledWith({
+      customer: "cus_123",
+      return_url: "http://localhost:3000/",
+    });
+  });
+});

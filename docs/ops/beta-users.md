@@ -31,36 +31,33 @@ Support: {{support_contact}}
 
 ## Provisioning Commands
 
-Use the production database provider console or Prisma Studio from a trusted operator machine.
+Use the production database provider console or local ops scripts from a trusted operator machine.
 
 ```powershell
 $env:DATABASE_URL="<production-connection-string>"
-bunx prisma studio
 ```
 
-Manual plan assignment:
+Dry-run a plan change:
 
-```sql
-UPDATE users
-SET plan = 'pro'
-WHERE "githubId" = '<github_id>';
+```powershell
+bun run ops:user:plan -- --user="<github_id-or-email-or-user-id>" --plan=pro
+```
+
+Apply a plan change:
+
+```powershell
+bun run ops:user:plan -- --user="<github_id-or-email-or-user-id>" --plan=pro --apply
 ```
 
 Reset a beta user to Free:
 
-```sql
-UPDATE users
-SET plan = 'free'
-WHERE "githubId" = '<github_id>';
+```powershell
+bun run ops:user:plan -- --user="<github_id-or-email-or-user-id>" --plan=free --apply
 ```
 
-Reset AI recommendation usage for a beta user:
+The script uses Prisma field names (`githubId`, `displayName`) instead of raw SQL column names and refuses ambiguous matches. Use the exact user id if more than one user matches.
 
-```sql
-DELETE FROM usage_logs
-WHERE "userId" = '<user_id>'
-  AND feature = 'ai_recommendation';
-```
+To reset AI recommendation usage for a beta user, use the production database console and delete the matching `usage_logs` row for feature `ai_recommendation`.
 
 ## Feedback Loop
 

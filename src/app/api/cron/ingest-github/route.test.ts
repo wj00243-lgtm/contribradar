@@ -14,7 +14,7 @@ describe("GET /api/cron/ingest-github", () => {
       cronSecret: "secret",
       githubToken: "github_token",
       repositoryConfig: "vercel/next.js",
-      client: {},
+      client: {} as any,
       ingestRepositories: vi.fn()
     });
 
@@ -32,7 +32,7 @@ describe("GET /api/cron/ingest-github", () => {
       cronSecret: "",
       githubToken: "github_token",
       repositoryConfig: "",
-      client: {},
+      client: {} as any,
       ingestRepositories,
       startCronRun: vi.fn()
     });
@@ -53,7 +53,7 @@ describe("GET /api/cron/ingest-github", () => {
       cronSecret: "",
       githubToken: "github_token",
       repositoryConfig: "",
-      client: {},
+      client: {} as any,
       ingestRepositories,
       startCronRun: vi.fn().mockResolvedValue({ id: "run_1", startedAt: new Date("2026-05-18T09:00:00Z") }),
       completeCronRun,
@@ -97,7 +97,7 @@ describe("GET /api/cron/ingest-github", () => {
       cronSecret: "",
       githubToken: "github_token",
       repositoryConfig: Array.from({ length: 11 }, (_, index) => `owner/repo-${index}`).join(","),
-      client: {},
+      client: {} as any,
       ingestRepositories: vi.fn(),
       startCronRun: vi.fn().mockResolvedValue({ id: "run_1", startedAt: new Date("2026-05-18T09:00:00Z") }),
       failCronRun,
@@ -127,7 +127,7 @@ describe("GET /api/cron/ingest-github", () => {
       cronSecret: "secret",
       githubToken: "github_token",
       repositoryConfig: "vercel/next.js",
-      client: { marker: "client" },
+      client: { marker: "client" } as any,
       ingestRepositories,
       startCronRun: vi.fn().mockResolvedValue({ id: "run_1", startedAt: new Date("2026-05-18T09:00:00Z") }),
       completeCronRun,
@@ -169,7 +169,7 @@ describe("GET /api/cron/ingest-github", () => {
       cronSecret: "",
       githubToken: "github_token",
       repositoryConfig: "vercel/next.js",
-      client: { marker: "client" },
+      client: { marker: "client" } as any,
       ingestRepositories: vi.fn().mockRejectedValue(new Error("GitHub timeout")),
       startCronRun: vi.fn().mockResolvedValue({ id: "run_1", startedAt: new Date("2026-05-18T09:00:00Z") }),
       failCronRun,

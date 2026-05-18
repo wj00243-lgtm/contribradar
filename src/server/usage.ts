@@ -23,26 +23,29 @@ type UsageClient = {
         };
       };
     }) => Promise<UsageLogRecord | null>;
-    upsert?: (args: {
-      where: {
-        userId_feature_period: {
-          userId: string;
-          feature: string;
-          period: string;
-        };
-      };
-      create: {
+    create?: (args: {
+      data: {
         userId: string;
         feature: string;
         period: string;
         count: number;
       };
-      update: {
+    }) => Promise<unknown>;
+    updateMany?: (args: {
+      where: {
+        userId: string;
+        feature: string;
+        period: string;
+        count: { lt: number } | { gt: number } | { gte: number } | { lte: number };
+      };
+      data: {
         count: {
           increment: number;
+        } | {
+          decrement: number;
         };
       };
-    }) => Promise<UsageLogRecord>;
+    }) => Promise<{ count: number }>;
   };
   userSettings?: {
     findUnique?: (args: { where: { userId: string } }) => Promise<UserSettingsRecord | null>;
@@ -109,42 +112,74 @@ export async function getAiRecommendationUsage(
   };
 }
 
-export async function canUseAiRecommendations(client: UsageClient, userId: string, date = new Date()): Promise<boolean> {
-  const usage = await getAiRecommendationUsage(client, userId, date);
-
-  return usage.used < usage.limit;
-}
-
-export async function incrementAiRecommendationUsage(
+export async function consumeAiRecommendationQuota(
   client: UsageClient,
   userId: string,
   amount = 1,
   date = new Date()
-): Promise<UsageLogRecord> {
-  if (!client.usageLog.upsert) {
-    throw new Error("usageLog.upsert is required to increment AI recommendation usage.");
+): Promise<boolean> {
+  if (!client.usageLog.updateMany || !client.usageLog.create) {
+    throw new Error("usageLog.updateMany and usageLog.create are required to consume AI recommendation quota.");
+  }
+
+  const usage = await getAiRecommendationUsage(client, userId, date);
+  
+  if (usage.used + amount > usage.limit) {
+    return false;
   }
 
   const period = getUsagePeriod(date);
 
-  return client.usageLog.upsert({
+  if (usage.used === 0) {
+    try {
+      await client.usageLog.create({
+        data: {
+          userId,
+          feature: AI_RECOMMENDATION_FEATURE,
+          period,
+          count: amount
+        }
+      });
+      return true;
+    } catch {
+      // Ignore unique constraint violation and fall through to updateMany
+    }
+  }
+
+  const result = await client.usageLog.updateMany({
     where: {
-      userId_feature_period: {
-        userId,
-        feature: AI_RECOMMENDATION_FEATURE,
-        period
-      }
-    },
-    create: {
       userId,
       feature: AI_RECOMMENDATION_FEATURE,
       period,
-      count: amount
+      count: { lte: usage.limit - amount }
     },
-    update: {
-      count: {
-        increment: amount
-      }
+    data: {
+      count: { increment: amount }
+    }
+  });
+
+  return result.count > 0;
+}
+
+export async function refundAiRecommendationQuota(
+  client: UsageClient,
+  userId: string,
+  amount = 1,
+  date = new Date()
+): Promise<void> {
+  if (!client.usageLog.updateMany) {
+    return;
+  }
+
+  await client.usageLog.updateMany({
+    where: {
+      userId,
+      feature: AI_RECOMMENDATION_FEATURE,
+      period: getUsagePeriod(date),
+      count: { gte: amount }
+    },
+    data: {
+      count: { decrement: amount }
     }
   });
 }

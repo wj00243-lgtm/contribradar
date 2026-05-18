@@ -4,22 +4,22 @@
 
 **Goal:** Build the Sprint 3B-1 Pro AI recommendations backend/API/UI shell.
 
-**Architecture:** Keep OpenAI transport, recommendation orchestration, API routing, and UI shell separate. The service accepts Prisma-compatible clients for fast tests and uses Sprint 3A quota/feature helpers.
+**Architecture:** Keep Gemini transport, recommendation orchestration, API routing, and UI shell separate. The service accepts Prisma-compatible clients for fast tests and uses Sprint 3A quota/feature helpers.
 
-**Tech Stack:** Next.js 15 App Router, TypeScript strict, Prisma, Auth.js v5, shadcn/ui, Vitest, OpenAI Chat Completions via `fetch`.
+**Tech Stack:** Next.js 15 App Router, TypeScript strict, Prisma, Auth.js v5, shadcn/ui, Vitest, Gemini via `fetch`.
 
 ---
 
-### Task 1: OpenAI JSON Client
+### Task 1: Gemini JSON Client
 
 **Files:**
-- Create: `src/server/openai.ts`
-- Test: `src/server/openai.test.ts`
+- Create: `src/server/gemini.ts`
+- Test: `src/server/gemini.test.ts`
 
 - [ ] Write tests for request payload, missing key, and invalid JSON.
-- [ ] Implement `OpenAiConfigurationError`, `OpenAiResponseError`, `generateJsonWithOpenAi`.
-- [ ] Verify with `bun test src/server/openai.test.ts`.
-- [ ] Commit with `feat: add openai json client`.
+- [ ] Implement `GeminiConfigurationError`, `GeminiResponseError`, `generateJsonWithGemini`.
+- [ ] Verify with `bun test src/server/gemini.test.ts`.
+- [ ] Commit with `feat: add gemini json client`.
 
 ### Task 2: Recommendation Service
 
@@ -41,7 +41,7 @@
 - Test: `src/app/api/v1/recommendations/route.test.ts`
 
 - [ ] Add Prisma singleton.
-- [ ] Add POST route with auth, feature gate, quota errors, and OpenAI errors.
+- [ ] Add POST route with auth, feature gate, quota errors, and Gemini errors.
 - [ ] Add route tests using injectable handlers where possible.
 - [ ] Verify route tests.
 - [ ] Commit with `feat: expose ai recommendations api`.

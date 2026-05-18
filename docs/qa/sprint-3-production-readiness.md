@@ -37,7 +37,7 @@ Required for production:
 
 Required for AI recommendations:
 
-- `OPENAI_API_KEY`
+- `GEMINI_API_KEY`
 
 Required for alert delivery:
 
@@ -113,7 +113,7 @@ Smoke checks:
 ### AI Recommendations
 
 - Use a Pro user.
-- Set `OPENAI_API_KEY`.
+- Set `GEMINI_API_KEY`.
 - Click Generate recommendations.
 - Confirm usage meter increments.
 - Confirm a Free user sees the ProGate overlay.

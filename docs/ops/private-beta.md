@@ -44,6 +44,7 @@ bun run qa:smoke -- --base-url https://contribradar.vercel.app --cron-secret "<C
 ```
 
 - Open `/ops`, load runs with `OPS_API_KEY`, and confirm the smoke-created cron run is visible.
+- For Pro testers, complete `docs/ops/ai-beta-validation.md`.
 
 ## Go / No-Go
 

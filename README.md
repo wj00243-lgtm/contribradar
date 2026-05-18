@@ -157,6 +157,7 @@ docs/ops/launch-plan.md
 docs/ops/monitoring.md
 docs/ops/release-tagging.md
 docs/ops/security-hardening.md
+docs/ops/ai-beta-validation.md
 ```
 
 ## Current Scope

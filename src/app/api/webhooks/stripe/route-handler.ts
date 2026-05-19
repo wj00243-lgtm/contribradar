@@ -80,6 +80,8 @@ export function createStripeWebhookPostHandler({ client, stripe, webhookSecret }
                 }
               })
             ]);
+          } else if (session.mode === "subscription") {
+            return NextResponse.json({ error: "Invalid checkout session payload" }, { status: 400 });
           }
           break;
         }

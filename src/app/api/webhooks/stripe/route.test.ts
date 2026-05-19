@@ -117,6 +117,40 @@ describe("POST /api/webhooks/stripe", () => {
     expect(mockClient.$transaction).toHaveBeenCalledOnce();
   });
 
+  it("returns 400 when checkout.session.completed is missing subscription identifiers", async () => {
+    const mockEvent = {
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          mode: "subscription",
+          customer: "cus_123",
+          subscription: "sub_123"
+        }
+      }
+    };
+
+    const mockStripe = {
+      webhooks: {
+        constructEvent: vi.fn().mockReturnValue(mockEvent)
+      }
+    };
+
+    const POST = createStripeWebhookPostHandler({
+      client: {
+        $transaction: vi.fn(),
+        user: { update: vi.fn() },
+        subscription: { upsert: vi.fn() }
+      },
+      stripe: mockStripe as unknown as Stripe,
+      webhookSecret: "secret"
+    });
+
+    const response = await POST(request("{}", "valid_sig"));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "Invalid checkout session payload" });
+  });
+
   it("returns 500 when the retrieved Stripe subscription is malformed", async () => {
     const mockEvent = {
       type: "checkout.session.completed",

@@ -186,7 +186,11 @@ function parseSubscription(value: unknown): {
     !Number.isFinite(subscription.current_period_end) ||
     typeof subscription.cancel_at_period_end !== "boolean" ||
     !subscription.items ||
-    !Array.isArray(subscription.items.data)
+    !Array.isArray(subscription.items.data) ||
+    !subscription.items.data[0] ||
+    !subscription.items.data[0].price ||
+    typeof subscription.items.data[0].price.id !== "string" ||
+    subscription.items.data[0].price.id.trim().length === 0
   ) {
     return null;
   }

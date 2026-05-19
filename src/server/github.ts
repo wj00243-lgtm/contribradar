@@ -87,6 +87,14 @@ export async function fetchGitHubRepoSnapshot(
     fetchContentSignals(parsed, { token, fetcher, timeoutMs })
   ]);
 
+  if (!isValidRepositoryPayload(repository)) {
+    throw new GitHubResponseError(`GitHub repository payload was invalid for /repos/${parsed.owner}/${parsed.repo}.`);
+  }
+
+  if (!Array.isArray(issues) || issues.some((issue) => !isValidIssuePayload(issue))) {
+    throw new GitHubResponseError(`GitHub issue payload was invalid for /repos/${parsed.owner}/${parsed.repo}/issues.`);
+  }
+
   return {
     repository,
     issues: issues.filter((issue) => issue.pull_request === undefined),
@@ -212,4 +220,47 @@ function decodeContent(content: GitHubContentPayload | null): string {
   }
 
   return Buffer.from(content.content.replace(/\s/g, ""), "base64").toString("utf8");
+}
+
+function isValidRepositoryPayload(value: unknown): value is GitHubRepositoryPayload {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const repository = value as Partial<GitHubRepositoryPayload>;
+
+  return (
+    typeof repository.id === "number" &&
+    typeof repository.full_name === "string" &&
+    !!repository.owner &&
+    typeof repository.owner.login === "string" &&
+    typeof repository.name === "string" &&
+    typeof repository.stargazers_count === "number" &&
+    typeof repository.forks_count === "number" &&
+    typeof repository.open_issues_count === "number" &&
+    typeof repository.size === "number" &&
+    typeof repository.created_at === "string" &&
+    typeof repository.updated_at === "string"
+  );
+}
+
+function isValidIssuePayload(value: unknown): value is GitHubIssuePayload {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const issue = value as Partial<GitHubIssuePayload>;
+
+  return (
+    typeof issue.id === "number" &&
+    typeof issue.number === "number" &&
+    typeof issue.title === "string" &&
+    typeof issue.body === "string" &&
+    (issue.state === "open" || issue.state === "closed") &&
+    Array.isArray(issue.labels) &&
+    Array.isArray(issue.assignees) &&
+    typeof issue.created_at === "string" &&
+    typeof issue.updated_at === "string" &&
+    typeof issue.comments === "number"
+  );
 }

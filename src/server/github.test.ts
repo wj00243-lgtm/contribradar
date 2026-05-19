@@ -111,6 +111,26 @@ describe("fetchGitHubRepoSnapshot", () => {
     });
   });
 
+  it("wraps malformed GitHub repository payloads", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 1,
+            full_name: "vercel/next.js"
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
+      .mockResolvedValue(new Response("missing", { status: 404 }));
+
+    await expect(fetchGitHubRepoSnapshot("vercel/next.js", { fetcher })).rejects.toThrow(
+      "GitHub repository payload was invalid for /repos/vercel/next.js."
+    );
+  });
+
   it("treats missing optional content files as absent signals", async () => {
     const fetcher = vi
       .fn()

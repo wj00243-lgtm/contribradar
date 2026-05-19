@@ -10,6 +10,63 @@ function request() {
 }
 
 describe("POST /api/v1/checkout", () => {
+  it("uses AUTH_URL for Stripe return URLs when NEXT_PUBLIC_APP_URL is not configured", async () => {
+    const previousAuthUrl = process.env.AUTH_URL;
+    const previousPublicAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    const previousStripePriceId = process.env.STRIPE_PRICE_ID;
+    process.env.AUTH_URL = "https://contribradar.vercel.app";
+    process.env.STRIPE_PRICE_ID = "price_123";
+    delete process.env.NEXT_PUBLIC_APP_URL;
+
+    const mockStripe = {
+      checkout: {
+        sessions: {
+          create: vi.fn().mockResolvedValue({ url: "https://checkout.stripe.com/123" })
+        }
+      }
+    };
+
+    const mockClient = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({ stripeCustomerId: "cus_123", email: "test@example.com" })
+      }
+    };
+
+    try {
+      const POST = createConfiguredCheckoutPostHandler({
+        auth: vi.fn().mockResolvedValue({ user: { id: "user_1" } }),
+        client: mockClient as unknown as PrismaClient,
+        stripeFactory: () => mockStripe as unknown as Stripe
+      });
+
+      const response = await POST(request());
+
+      expect(response.status).toBe(200);
+      expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(expect.objectContaining({
+        success_url: "https://contribradar.vercel.app/?success=true",
+        cancel_url: "https://contribradar.vercel.app/pricing?canceled=true"
+      }));
+    } finally {
+      if (previousAuthUrl === undefined) {
+        delete process.env.AUTH_URL;
+      } else {
+        process.env.AUTH_URL = previousAuthUrl;
+      }
+
+      if (previousPublicAppUrl === undefined) {
+        delete process.env.NEXT_PUBLIC_APP_URL;
+      } else {
+        process.env.NEXT_PUBLIC_APP_URL = previousPublicAppUrl;
+      }
+
+      if (previousStripePriceId === undefined) {
+        delete process.env.STRIPE_PRICE_ID;
+      } else {
+        process.env.STRIPE_PRICE_ID = previousStripePriceId;
+      }
+    }
+  });
+
   it("returns 503 when Stripe is not configured in the route wiring", async () => {
     const POST = createConfiguredCheckoutPostHandler({
       auth: vi.fn().mockResolvedValue({ user: { id: "user_1" } }),

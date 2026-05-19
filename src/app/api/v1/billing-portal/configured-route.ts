@@ -31,7 +31,7 @@ export function createConfiguredBillingPortalPostHandler({
       auth,
       client,
       stripe,
-      appUrl: process.env.NEXT_PUBLIC_APP_URL
+      appUrl: process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL
     })(request);
   };
 }

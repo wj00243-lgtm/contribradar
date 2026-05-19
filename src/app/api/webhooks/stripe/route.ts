@@ -1,13 +1,11 @@
-import { getStripe } from "@/server/stripe";
 import { PrismaClient } from "@prisma/client";
-import { createStripeWebhookPostHandler } from "./route-handler";
+import { createConfiguredStripeWebhookPostHandler } from "./configured-route";
 
 const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
-  return createStripeWebhookPostHandler({
+  return createConfiguredStripeWebhookPostHandler({
     client: prisma,
-    stripe: getStripe(),
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET
   })(request);
 }

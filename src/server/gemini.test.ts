@@ -86,8 +86,29 @@ describe("generateJsonWithGemini", () => {
         systemPrompt: "Return JSON only.",
         userPrompt: "Recommend repos.",
         fetcher
-      })
+    })
     ).rejects.toBeInstanceOf(GeminiResponseError);
+  });
+
+  it("wraps unreadable success payloads as GeminiResponseError", async () => {
+    const fetcher = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => {
+        throw new Error("bad body");
+      }
+    } as unknown as Response);
+
+    await expect(
+      generateJsonWithGemini({
+        apiKey: "test-key",
+        systemPrompt: "Return JSON only.",
+        userPrompt: "Recommend repos.",
+        fetcher
+      })
+    ).rejects.toMatchObject({
+      name: "GeminiResponseError",
+      message: "Gemini response payload was not readable."
+    });
   });
 
   it("wraps network and timeout failures as GeminiResponseError", async () => {

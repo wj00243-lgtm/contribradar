@@ -76,4 +76,34 @@ describe("createResendEmailAdapter", () => {
 
     await expect(adapter.send(payload)).rejects.toThrow("Resend email delivery failed with 429: rate limited");
   });
+
+  it("normalizes network errors to a readable message", async () => {
+    const adapter = createResendEmailAdapter({
+      apiKey: "resend_key",
+      from: "alerts@example.com",
+      fetch: vi.fn().mockRejectedValue(new TypeError("Failed to fetch"))
+    });
+
+    await expect(adapter.send(payload)).rejects.toThrow("Resend email delivery failed: network error (Failed to fetch)");
+  });
+
+  it("normalizes timeout errors to a readable message", async () => {
+    const adapter = createResendEmailAdapter({
+      apiKey: "resend_key",
+      from: "alerts@example.com",
+      fetch: vi.fn().mockRejectedValue(new DOMException("The operation was aborted", "AbortError"))
+    });
+
+    await expect(adapter.send(payload)).rejects.toThrow("Resend email delivery failed: request timeout");
+  });
+
+  it("normalizes generic errors to a readable message", async () => {
+    const adapter = createResendEmailAdapter({
+      apiKey: "resend_key",
+      from: "alerts@example.com",
+      fetch: vi.fn().mockRejectedValue(new Error("Unexpected issue"))
+    });
+
+    await expect(adapter.send(payload)).rejects.toThrow("Resend email delivery failed: unexpected error (Unexpected issue)");
+  });
 });

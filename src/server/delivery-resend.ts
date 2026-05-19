@@ -37,33 +37,53 @@ export function createResendEmailAdapter({
         };
       }
 
-      const response = await fetchImpl("https://api.resend.com/emails", {
-        method: "POST",
-        signal: AbortSignal.timeout(timeoutMs),
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          from,
-          to: [payload.user.email],
-          subject: payload.subject,
-          text: payload.text
-        })
-      });
+      try {
+        const response = await fetchImpl("https://api.resend.com/emails", {
+          method: "POST",
+          signal: AbortSignal.timeout(timeoutMs),
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            from,
+            to: [payload.user.email],
+            subject: payload.subject,
+            text: payload.text
+          })
+        });
 
-      if (!response.ok) {
-        const body = response.text ? await response.text() : "";
-        throw new Error(`Resend email delivery failed with ${response.status}: ${body}`);
+        if (!response.ok) {
+          const body = response.text ? await response.text() : "";
+          throw new Error(`Resend email delivery failed with ${response.status}: ${body}`);
+        }
+
+        const body = response.json ? await response.json() : {};
+        const providerId = body && typeof body === "object" && "id" in body && typeof body.id === "string" ? body.id : undefined;
+
+        return {
+          status: "sent",
+          providerId
+        };
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          throw new Error("Resend email delivery failed: request timeout");
+        }
+
+        if (error instanceof TypeError) {
+          const message = error.message || "network error";
+          throw new Error(`Resend email delivery failed: network error (${message})`);
+        }
+
+        if (error instanceof Error) {
+          if (error.message.startsWith("Resend email delivery failed")) {
+            throw error;
+          }
+          throw new Error(`Resend email delivery failed: unexpected error (${error.message})`);
+        }
+
+        throw new Error(`Resend email delivery failed: unexpected error (${String(error)})`);
       }
-
-      const body = response.json ? await response.json() : {};
-      const providerId = body && typeof body === "object" && "id" in body && typeof body.id === "string" ? body.id : undefined;
-
-      return {
-        status: "sent",
-        providerId
-      };
     }
   };
 }

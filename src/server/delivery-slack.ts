@@ -27,25 +27,45 @@ export function createSlackWebhookAdapter({
         };
       }
 
-      const response = await fetchImpl(webhookUrl, {
-        method: "POST",
-        signal: AbortSignal.timeout(timeoutMs),
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          text: payload.text
-        })
-      });
+      try {
+        const response = await fetchImpl(webhookUrl, {
+          method: "POST",
+          signal: AbortSignal.timeout(timeoutMs),
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            text: payload.text
+          })
+        });
 
-      if (!response.ok) {
-        const body = response.text ? await response.text() : "";
-        throw new Error(`Slack webhook delivery failed with ${response.status}: ${body}`);
+        if (!response.ok) {
+          const body = response.text ? await response.text() : "";
+          throw new Error(`Slack webhook delivery failed with ${response.status}: ${body}`);
+        }
+
+        return {
+          status: "sent"
+        };
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          throw new Error("Slack webhook delivery failed: request timeout");
+        }
+
+        if (error instanceof TypeError) {
+          const message = error.message || "network error";
+          throw new Error(`Slack webhook delivery failed: network error (${message})`);
+        }
+
+        if (error instanceof Error) {
+          if (error.message.startsWith("Slack webhook delivery failed")) {
+            throw error;
+          }
+          throw new Error(`Slack webhook delivery failed: unexpected error (${error.message})`);
+        }
+
+        throw new Error(`Slack webhook delivery failed: unexpected error (${String(error)})`);
       }
-
-      return {
-        status: "sent"
-      };
     }
   };
 }

@@ -61,4 +61,31 @@ describe("createSlackWebhookAdapter", () => {
 
     await expect(adapter.send(payload)).rejects.toThrow("Slack webhook delivery failed with 500: server error");
   });
+
+  it("normalizes network errors to a readable message", async () => {
+    const adapter = createSlackWebhookAdapter({
+      webhookUrl: "https://hooks.slack.com/services/test",
+      fetch: vi.fn().mockRejectedValue(new TypeError("Failed to fetch"))
+    });
+
+    await expect(adapter.send(payload)).rejects.toThrow("Slack webhook delivery failed: network error (Failed to fetch)");
+  });
+
+  it("normalizes timeout errors to a readable message", async () => {
+    const adapter = createSlackWebhookAdapter({
+      webhookUrl: "https://hooks.slack.com/services/test",
+      fetch: vi.fn().mockRejectedValue(new DOMException("The operation was aborted", "AbortError"))
+    });
+
+    await expect(adapter.send(payload)).rejects.toThrow("Slack webhook delivery failed: request timeout");
+  });
+
+  it("normalizes generic errors to a readable message", async () => {
+    const adapter = createSlackWebhookAdapter({
+      webhookUrl: "https://hooks.slack.com/services/test",
+      fetch: vi.fn().mockRejectedValue(new Error("Unexpected issue"))
+    });
+
+    await expect(adapter.send(payload)).rejects.toThrow("Slack webhook delivery failed: unexpected error (Unexpected issue)");
+  });
 });

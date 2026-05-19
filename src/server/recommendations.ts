@@ -230,12 +230,17 @@ export async function generateAiRepoRecommendations(
 
   const usage = await getAiRecommendationUsage(client, userId, now);
 
+  const recommendations = toValidAiRecommendations(payload?.recommendations);
+
+  const used = Math.max(usage.used, 1);
+  const remaining = Math.max(usage.limit - used, 0);
+
   return {
-    recommendations: payload.recommendations,
+    recommendations,
     usage: {
       ...usage,
-      used: usage.used === 0 ? 1 : usage.used,
-      remaining: usage.used === 0 ? Math.max(usage.limit - 1, 0) : usage.remaining
+      used,
+      remaining
     }
   };
 }
@@ -293,4 +298,35 @@ function toNumber(value: unknown): number {
   }
 
   return Number(value ?? 0);
+}
+
+function toValidAiRecommendations(value: unknown): AiRepoRecommendation[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter(isValidAiRecommendation);
+}
+
+function isValidAiRecommendation(value: unknown): value is AiRepoRecommendation {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const recommendation = value as Partial<AiRepoRecommendation>;
+
+  return (
+    isNonEmptyString(recommendation.repoId) &&
+    isNonEmptyString(recommendation.fullName) &&
+    typeof recommendation.fitScore === "number" &&
+    Number.isFinite(recommendation.fitScore) &&
+    recommendation.fitScore >= 0 &&
+    recommendation.fitScore <= 100 &&
+    isNonEmptyString(recommendation.reason) &&
+    (recommendation.suggestedIssueSearch === undefined || typeof recommendation.suggestedIssueSearch === "string")
+  );
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
 }

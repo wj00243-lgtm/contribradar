@@ -4,7 +4,8 @@ import {
   buildRecommendationContext,
   generateAiRepoRecommendations,
   RecommendationQuotaError,
-  RecommendationPlanError
+  RecommendationPlanError,
+  RecommendationUserError
 } from "./recommendations";
 
 function createClient(overrides: Partial<ReturnType<typeof baseClient>> = {}) {
@@ -138,6 +139,21 @@ describe("generateAiRepoRecommendations", () => {
     ).rejects.toBeInstanceOf(RecommendationPlanError);
   });
 
+  it("returns a user not found error when the user does not exist", async () => {
+    const client = createClient({
+      user: {
+        findUnique: vi.fn().mockResolvedValue(null)
+      }
+    });
+
+    await expect(
+      generateAiRepoRecommendations(client, "user_1", {
+        apiKey: "test-key",
+        generator: vi.fn()
+      })
+    ).rejects.toBeInstanceOf(RecommendationUserError);
+  });
+
   it("blocks users who have exhausted their monthly recommendation quota", async () => {
     const client = createClient({
       usageLog: {
@@ -198,5 +214,70 @@ describe("generateAiRepoRecommendations", () => {
 
     expect(client.usageLog.create).toHaveBeenCalledOnce(); // it was consumed
     expect(client.usageLog.updateMany).toHaveBeenCalledOnce(); // it was refunded via updateMany with decrement
+  });
+
+  it("filters out invalid recommendations from the AI response", async () => {
+    const client = createClient();
+    const generator = vi.fn().mockResolvedValue({
+      recommendations: [
+        {
+          repoId: "repo_1",
+          fullName: "acme/recommended",
+          fitScore: 94,
+          reason: "Valid",
+          suggestedIssueSearch: "search"
+        },
+        {
+          // missing repoId
+          fullName: "acme/missing-id",
+          fitScore: 80,
+          reason: "Invalid",
+          suggestedIssueSearch: "search"
+        },
+        {
+          repoId: "repo_2",
+          fullName: "acme/invalid-fit",
+          fitScore: "high", // invalid type
+          reason: "Invalid",
+          suggestedIssueSearch: "search"
+        },
+        {
+          repoId: "repo_3",
+          fullName: "acme/out-of-range-fit",
+          fitScore: 101,
+          reason: "Invalid",
+          suggestedIssueSearch: "search"
+        },
+        {
+          repoId: "repo_4",
+          fullName: "acme/invalid-search",
+          fitScore: 75,
+          reason: "Invalid",
+          suggestedIssueSearch: 42
+        }
+      ]
+    });
+
+    const result = await generateAiRepoRecommendations(client, "user_1", {
+      apiKey: "test-key",
+      generator
+    });
+
+    expect(result.recommendations).toHaveLength(1);
+    expect(result.recommendations[0].repoId).toBe("repo_1");
+  });
+
+  it("handles empty or malformed recommendations array safely", async () => {
+    const client = createClient();
+    const generator = vi.fn().mockResolvedValue({
+      recommendations: null // malformed
+    });
+
+    const result = await generateAiRepoRecommendations(client, "user_1", {
+      apiKey: "test-key",
+      generator
+    });
+
+    expect(result.recommendations).toEqual([]);
   });
 });

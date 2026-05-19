@@ -89,4 +89,20 @@ describe("generateJsonWithGemini", () => {
       })
     ).rejects.toBeInstanceOf(GeminiResponseError);
   });
+
+  it("wraps network and timeout failures as GeminiResponseError", async () => {
+    const fetcher = vi.fn().mockRejectedValue(new DOMException("The operation timed out.", "TimeoutError"));
+
+    await expect(
+      generateJsonWithGemini({
+        apiKey: "test-key",
+        systemPrompt: "Return JSON only.",
+        userPrompt: "Recommend repos.",
+        fetcher
+      })
+    ).rejects.toMatchObject({
+      name: "GeminiResponseError",
+      message: "Gemini request failed before receiving a response."
+    });
+  });
 });

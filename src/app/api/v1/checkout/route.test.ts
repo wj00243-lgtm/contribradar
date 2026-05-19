@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { StripeConfigurationError } from "@/server/stripe";
+import type { PrismaClient } from "@prisma/client";
+import { createConfiguredCheckoutPostHandler } from "./configured-route";
 import { createCheckoutPostHandler } from "./route-handler";
 import type Stripe from "stripe";
 
@@ -7,6 +10,21 @@ function request() {
 }
 
 describe("POST /api/v1/checkout", () => {
+  it("returns 503 when Stripe is not configured in the route wiring", async () => {
+    const POST = createConfiguredCheckoutPostHandler({
+      auth: vi.fn().mockResolvedValue({ user: { id: "user_1" } }),
+      client: {} as PrismaClient,
+      stripeFactory: () => {
+        throw new StripeConfigurationError("Stripe is not configured.");
+      }
+    });
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({ error: "Stripe is not configured" });
+  });
+
   it("returns 401 when no session is present", async () => {
     const POST = createCheckoutPostHandler({
       auth: vi.fn().mockResolvedValue(null),

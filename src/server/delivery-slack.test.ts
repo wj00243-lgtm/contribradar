@@ -62,6 +62,21 @@ describe("createSlackWebhookAdapter", () => {
     await expect(adapter.send(payload)).rejects.toThrow("Slack webhook delivery failed with 500: server error");
   });
 
+  it("treats unreadable failure bodies as empty text", async () => {
+    const adapter = createSlackWebhookAdapter({
+      webhookUrl: "https://hooks.slack.com/services/test",
+      fetch: vi.fn().mockResolvedValue({
+        ok: false,
+        status: 502,
+        text: async () => {
+          throw new Error("body unavailable");
+        }
+      })
+    });
+
+    await expect(adapter.send(payload)).rejects.toThrow("Slack webhook delivery failed with 502: ");
+  });
+
   it("normalizes network errors to a readable message", async () => {
     const adapter = createSlackWebhookAdapter({
       webhookUrl: "https://hooks.slack.com/services/test",

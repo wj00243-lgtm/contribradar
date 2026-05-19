@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { StripeConfigurationError } from "@/server/stripe";
+import type { PrismaClient } from "@prisma/client";
+import { createConfiguredStripeWebhookPostHandler } from "./configured-route";
 import { createStripeWebhookPostHandler } from "./route-handler";
 import type Stripe from "stripe";
 
@@ -14,6 +17,21 @@ function request(body: string, signature?: string) {
 }
 
 describe("POST /api/webhooks/stripe", () => {
+  it("returns 503 when Stripe is not configured in the route wiring", async () => {
+    const POST = createConfiguredStripeWebhookPostHandler({
+      client: {} as PrismaClient,
+      stripeFactory: () => {
+        throw new StripeConfigurationError("Stripe is not configured.");
+      },
+      webhookSecret: "secret"
+    });
+
+    const response = await POST(request("body", "sig_123"));
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({ error: "Stripe is not configured" });
+  });
+
   it("returns 400 when missing signature", async () => {
     const POST = createStripeWebhookPostHandler({
       client: {},

@@ -17,6 +17,7 @@
     "qa:cron:e2e": "node scripts/test-cron-e2e.mjs",
     "qa:ai:usage": "node scripts/verify-ai-usage.mjs",
     "qa:github:ingest": "node scripts/verify-github-ingestion.mjs",
+    "ops:ai:reset": "node scripts/reset-ai-usage.mjs",
     "ops:user:plan": "node scripts/set-user-plan.mjs",
     "ops:user:quota": "node scripts/set-user-quota.mjs",
     "prisma:validate": "prisma validate",

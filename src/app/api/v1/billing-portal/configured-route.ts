@@ -1,4 +1,5 @@
 import { getStripe, StripeConfigurationError } from "@/server/stripe";
+import { billingAppUrl } from "@/server/billing-url";
 import type { PrismaClient } from "@prisma/client";
 import type { Session } from "next-auth";
 import { NextResponse } from "next/server";
@@ -31,7 +32,7 @@ export function createConfiguredBillingPortalPostHandler({
       auth,
       client,
       stripe,
-      appUrl: process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL
+      appUrl: billingAppUrl(process.env.NEXT_PUBLIC_APP_URL, process.env.AUTH_URL)
     })(request);
   };
 }

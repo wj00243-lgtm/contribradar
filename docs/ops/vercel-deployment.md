@@ -14,6 +14,10 @@ Set these variables in the Vercel project before deploying production:
 - `RESEND_FROM_EMAIL`
 - `SLACK_WEBHOOK_URL`
 - `CRON_SECRET`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PRICE_ID`
+- `STRIPE_WEBHOOK_SECRET`
+- `OPS_API_KEY`
 
 Optional for scheduled GitHub ingestion:
 

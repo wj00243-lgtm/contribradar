@@ -13,6 +13,9 @@ export const required = [
   "RESEND_FROM_EMAIL",
   "SLACK_WEBHOOK_URL",
   "CRON_SECRET",
+  "STRIPE_SECRET_KEY",
+  "STRIPE_PRICE_ID",
+  "STRIPE_WEBHOOK_SECRET",
   "OPS_API_KEY"
 ];
 

@@ -18,6 +18,9 @@ describe("check-env", () => {
       "RESEND_FROM_EMAIL",
       "SLACK_WEBHOOK_URL",
       "CRON_SECRET",
+      "STRIPE_SECRET_KEY",
+      "STRIPE_PRICE_ID",
+      "STRIPE_WEBHOOK_SECRET",
       "OPS_API_KEY"
     ]);
   });
@@ -38,6 +41,9 @@ describe("check-env", () => {
       "RESEND_FROM_EMAIL",
       "SLACK_WEBHOOK_URL",
       "CRON_SECRET",
+      "STRIPE_SECRET_KEY",
+      "STRIPE_PRICE_ID",
+      "STRIPE_WEBHOOK_SECRET",
       "OPS_API_KEY"
     ]);
     expect(result.missingOptional).toEqual(["OPENAI_API_KEY", "GITHUB_TOKEN", "GITHUB_INGEST_REPOS", "SENTRY_DSN"]);

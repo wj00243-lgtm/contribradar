@@ -23,6 +23,7 @@ Use this checklist before the first production launch and before major Pro featu
 - [ ] `SLACK_WEBHOOK_URL` is set for Slack alert delivery.
 - [ ] `CRON_SECRET` is set and at least 16 random characters.
 - [ ] `OPS_API_KEY` is set and stored only in the operator password manager / Vercel env.
+- [ ] `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, and `STRIPE_WEBHOOK_SECRET` are set for billing.
 - [ ] `GITHUB_TOKEN` is set if scheduled ingestion will call GitHub regularly.
 - [ ] `GITHUB_INGEST_REPOS` is set to 10 or fewer `owner/repo` values, or intentionally left empty for no-op scheduled ingestion.
 - [ ] `SENTRY_DSN` is set if Sentry is enabled.

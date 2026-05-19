@@ -199,4 +199,115 @@ describe("generateAiRepoRecommendations", () => {
     expect(client.usageLog.create).toHaveBeenCalledOnce(); // it was consumed
     expect(client.usageLog.updateMany).toHaveBeenCalledOnce(); // it was refunded via updateMany with decrement
   });
+
+  it("throws when recommendation is missing repoId", async () => {
+    const client = createClient();
+    const generator = vi.fn().mockResolvedValue({
+      recommendations: [
+        {
+          fullName: "acme/repo",
+          fitScore: 90,
+          reason: "Good fit",
+          suggestedIssueSearch: "good first issue"
+        }
+      ]
+    });
+
+    await expect(
+      generateAiRepoRecommendations(client, "user_1", {
+        apiKey: "test-key",
+        generator
+      })
+    ).rejects.toThrow("repoId is required");
+
+    // Verify quota was refunded since validation failed
+    expect(client.usageLog.updateMany).toHaveBeenCalled();
+  });
+
+  it("throws when fitScore is not a valid number", async () => {
+    const client = createClient();
+    const generator = vi.fn().mockResolvedValue({
+      recommendations: [
+        {
+          repoId: "repo_1",
+          fullName: "acme/repo",
+          fitScore: "high",
+          reason: "Good fit",
+          suggestedIssueSearch: "good first issue"
+        }
+      ]
+    });
+
+    await expect(
+      generateAiRepoRecommendations(client, "user_1", {
+        apiKey: "test-key",
+        generator
+      })
+    ).rejects.toThrow("fitScore must be a number between 0 and 100");
+
+    expect(client.usageLog.updateMany).toHaveBeenCalled();
+  });
+
+  it("throws when fitScore is out of valid range", async () => {
+    const client = createClient();
+    const generator = vi.fn().mockResolvedValue({
+      recommendations: [
+        {
+          repoId: "repo_1",
+          fullName: "acme/repo",
+          fitScore: 150,
+          reason: "Good fit",
+          suggestedIssueSearch: "good first issue"
+        }
+      ]
+    });
+
+    await expect(
+      generateAiRepoRecommendations(client, "user_1", {
+        apiKey: "test-key",
+        generator
+      })
+    ).rejects.toThrow("fitScore must be a number between 0 and 100");
+
+    expect(client.usageLog.updateMany).toHaveBeenCalled();
+  });
+
+  it("throws when recommendation is missing reason", async () => {
+    const client = createClient();
+    const generator = vi.fn().mockResolvedValue({
+      recommendations: [
+        {
+          repoId: "repo_1",
+          fullName: "acme/repo",
+          fitScore: 90,
+          suggestedIssueSearch: "good first issue"
+        }
+      ]
+    });
+
+    await expect(
+      generateAiRepoRecommendations(client, "user_1", {
+        apiKey: "test-key",
+        generator
+      })
+    ).rejects.toThrow("reason is required");
+
+    expect(client.usageLog.updateMany).toHaveBeenCalled();
+  });
+
+  it("throws when recommendations array is empty", async () => {
+    const client = createClient();
+    const generator = vi.fn().mockResolvedValue({
+      recommendations: []
+    });
+
+    await expect(
+      generateAiRepoRecommendations(client, "user_1", {
+        apiKey: "test-key",
+        generator
+      })
+    ).rejects.toThrow("recommendations array must not be empty");
+
+    expect(client.usageLog.updateMany).toHaveBeenCalled();
+  });
 });

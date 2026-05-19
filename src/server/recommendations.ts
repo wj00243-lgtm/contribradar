@@ -111,6 +111,44 @@ type AiRecommendationPayload = {
   recommendations: AiRepoRecommendation[];
 };
 
+function validateRecommendations(payload: unknown): AiRecommendationPayload {
+  if (!payload || typeof payload !== "object" || !("recommendations" in payload)) {
+    throw new RecommendationUserError("AI recommendation payload must include recommendations array.");
+  }
+
+  const { recommendations } = payload as { recommendations: unknown };
+
+  if (!Array.isArray(recommendations)) {
+    throw new RecommendationUserError("recommendations must be an array.");
+  }
+
+  if (recommendations.length === 0) {
+    throw new RecommendationUserError("recommendations array must not be empty");
+  }
+
+  for (const rec of recommendations) {
+    if (!rec || typeof rec !== "object") {
+      throw new RecommendationUserError("Each recommendation must be an object.");
+    }
+
+    const recommendation = rec as Record<string, unknown>;
+
+    if (!recommendation.repoId || typeof recommendation.repoId !== "string") {
+      throw new RecommendationUserError("repoId is required and must be a string.");
+    }
+
+    if (typeof recommendation.fitScore !== "number" || recommendation.fitScore < 0 || recommendation.fitScore > 100) {
+      throw new RecommendationUserError("fitScore must be a number between 0 and 100");
+    }
+
+    if (!recommendation.reason || typeof recommendation.reason !== "string") {
+      throw new RecommendationUserError("reason is required and must be a string.");
+    }
+  }
+
+  return payload as AiRecommendationPayload;
+}
+
 type RecommendationOptions = {
   apiKey?: string;
   model?: string;
@@ -219,10 +257,11 @@ export async function generateAiRepoRecommendations(
 
   let payload;
   try {
-    payload = await (options.generator ?? defaultRecommendationGenerator)(context, {
+    const rawPayload = await (options.generator ?? defaultRecommendationGenerator)(context, {
       apiKey: options.apiKey,
       model: options.model
     });
+    payload = validateRecommendations(rawPayload);
   } catch (error) {
     await refundAiRecommendationQuota(client, userId, 1, now);
     throw error;

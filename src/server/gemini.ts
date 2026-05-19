@@ -87,7 +87,7 @@ export async function generateJsonWithGemini<T>({
     throw new GeminiResponseError(`Gemini request failed with status ${response.status}.`);
   }
 
-  const payload = (await response.json()) as GeminiGenerateContentResponse;
+  const payload = await readJsonPayload(response);
   const content = payload.candidates?.[0]?.content?.parts?.find((part) => typeof part.text === "string")?.text;
 
   if (!content) {
@@ -98,5 +98,13 @@ export async function generateJsonWithGemini<T>({
     return JSON.parse(content) as T;
   } catch {
     throw new GeminiResponseError("Gemini response content was not valid JSON.");
+  }
+}
+
+async function readJsonPayload(response: Response): Promise<GeminiGenerateContentResponse> {
+  try {
+    return (await response.json()) as GeminiGenerateContentResponse;
+  } catch {
+    throw new GeminiResponseError("Gemini response payload was not readable.");
   }
 }

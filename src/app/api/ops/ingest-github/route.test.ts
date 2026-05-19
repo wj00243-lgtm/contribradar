@@ -13,6 +13,17 @@ function request(body: unknown, token?: string) {
   });
 }
 
+function invalidJsonRequest(token?: string) {
+  return new Request("http://localhost/api/ops/ingest-github", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    body: "{"
+  });
+}
+
 describe("POST /api/ops/ingest-github", () => {
   it("returns 401 when OPS_API_KEY is configured and bearer token is wrong", async () => {
     const POST = createIngestGitHubPostHandler({
@@ -59,6 +70,21 @@ describe("POST /api/ops/ingest-github", () => {
 
     expect(response.status).toBe(400);
     expect(body.error.code).toBe("INVALID_INGESTION_REQUEST");
+  });
+
+  it("returns 400 when the ingestion request body is not valid JSON", async () => {
+    const POST = createIngestGitHubPostHandler({
+      opsApiKey: "secret",
+      githubToken: "github_token",
+      client: {} as any,
+      ingestRepositories: vi.fn()
+    });
+
+    const response = await POST(invalidJsonRequest("secret"));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe("INVALID_JSON");
   });
 
   it("calls the ingestion service for authorized operators", async () => {

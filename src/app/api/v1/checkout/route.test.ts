@@ -12,6 +12,7 @@ function request() {
 describe("POST /api/v1/checkout", () => {
   it("returns 503 when Stripe is not configured in the route wiring", async () => {
     const POST = createConfiguredCheckoutPostHandler({
+      auth: vi.fn().mockResolvedValue({ user: { id: "user_1" } }),
       client: {} as PrismaClient,
       stripeFactory: () => {
         throw new StripeConfigurationError("Stripe is not configured.");

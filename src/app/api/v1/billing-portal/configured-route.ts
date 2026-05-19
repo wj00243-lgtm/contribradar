@@ -1,15 +1,18 @@
-import { auth } from "@/auth";
 import { getStripe, StripeConfigurationError } from "@/server/stripe";
 import type { PrismaClient } from "@prisma/client";
+import type { Session } from "next-auth";
 import { NextResponse } from "next/server";
 import { createBillingPortalPostHandler } from "./route-handler";
 
 type StripeFactory = typeof getStripe;
+type AuthFactory = () => Promise<Session | null>;
 
 export function createConfiguredBillingPortalPostHandler({
+  auth,
   client,
   stripeFactory = getStripe
 }: {
+  auth: AuthFactory;
   client: PrismaClient;
   stripeFactory?: StripeFactory;
 }) {

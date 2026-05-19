@@ -41,6 +41,9 @@ Set these on the Vercel production environment:
 - `SLACK_WEBHOOK_URL`
 - `CRON_SECRET`
 - `OPS_API_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PRICE_ID`
+- `STRIPE_WEBHOOK_SECRET`
 - `GITHUB_TOKEN` if scheduled ingestion will call GitHub regularly
 - `GITHUB_INGEST_REPOS` if scheduled ingestion should run against launch repositories
 - `SENTRY_DSN` if Sentry is used

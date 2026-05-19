@@ -96,6 +96,12 @@ Required for protected operator endpoints:
 
 - `OPS_API_KEY`
 
+Required for Stripe billing:
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PRICE_ID`
+- `STRIPE_WEBHOOK_SECRET`
+
 Validate required production variables:
 
 ```powershell

@@ -192,11 +192,30 @@ function normalizeFilters(value: unknown): Watchlist["filters"] {
   const filters = value && typeof value === "object" ? (value as Partial<Watchlist["filters"]>) : {};
 
   return {
-    languages: Array.isArray(filters.languages) ? filters.languages : [],
-    topics: Array.isArray(filters.topics) ? filters.topics : [],
-    minScore: typeof filters.minScore === "number" ? filters.minScore : 0,
+    languages: normalizeStringList(filters.languages),
+    topics: normalizeStringList(filters.topics),
+    minScore: clampScore(filters.minScore),
     hasGoodFirstIssue: filters.hasGoodFirstIssue === true
   };
+}
+
+function normalizeStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return [...new Set(value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0))];
+}
+
+function clampScore(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.min(Math.max(value, 0), 100);
 }
 
 function repositoryWhereForFilters(filters: Watchlist["filters"]) {

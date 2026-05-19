@@ -1,6 +1,7 @@
 import { LogIn, LogOut } from "lucide-react";
 
 import { auth, isAuthConfigured, signIn, signOut } from "@/auth";
+import { BillingActionButton } from "@/components/billing/billing-action-button";
 import { Button } from "@/components/ui/button";
 
 export async function AuthButtons() {
@@ -12,11 +13,9 @@ export async function AuthButtons() {
     return (
       <div className="flex items-center gap-2">
         {isPro ? (
-          <form action="/api/v1/billing-portal" method="POST">
-            <Button type="submit" variant="ghost" size="sm" className="text-zinc-400 hover:text-zinc-100">
-              Manage Billing
-            </Button>
-          </form>
+          <BillingActionButton endpoint="/api/v1/billing-portal" variant="ghost" size="sm" className="text-zinc-400 hover:text-zinc-100">
+            Manage Billing
+          </BillingActionButton>
         ) : (
           <Button variant="default" size="sm" className="bg-emerald-400 text-zinc-950 hover:bg-emerald-300" asChild>
             <a href="/pricing">Upgrade to Pro</a>

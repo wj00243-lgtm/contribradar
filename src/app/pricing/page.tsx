@@ -2,6 +2,7 @@ import { Check, Sparkles, Zap, Shield, ArrowRight } from "lucide-react";
 import { auth, signIn } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { AuthButtons } from "@/components/auth/auth-buttons";
+import { BillingActionButton } from "@/components/billing/billing-action-button";
 
 export const metadata = {
   title: "Pricing | ContribRadar",
@@ -124,18 +125,14 @@ export default async function PricingPage() {
                   </Button>
                 </form>
               ) : isPro ? (
-                <form action="/api/v1/billing-portal" method="POST">
-                  <Button variant="secondary" className="w-full" size="lg">
-                    Manage Subscription
-                  </Button>
-                </form>
+                <BillingActionButton endpoint="/api/v1/billing-portal" variant="secondary" className="w-full" size="lg">
+                  Manage Subscription
+                </BillingActionButton>
               ) : (
-                <form action="/api/v1/checkout" method="POST">
-                  <Button className="w-full bg-emerald-400 text-zinc-950 hover:bg-emerald-300 group" size="lg">
-                    Upgrade to Pro
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Button>
-                </form>
+                <BillingActionButton endpoint="/api/v1/checkout" className="w-full bg-emerald-400 text-zinc-950 hover:bg-emerald-300 group" size="lg">
+                  Upgrade to Pro
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </BillingActionButton>
               )}
             </div>
           </div>

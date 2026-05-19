@@ -131,6 +131,61 @@ describe("fetchGitHubRepoSnapshot", () => {
     );
   });
 
+  it("wraps malformed GitHub issue payloads", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 1,
+            full_name: "vercel/next.js",
+            owner: { login: "vercel" },
+            name: "next.js",
+            description: "The React Framework",
+            language: "TypeScript",
+            topics: ["react"],
+            stargazers_count: 100,
+            forks_count: 20,
+            open_issues_count: 5,
+            license: { spdx_id: "MIT" },
+            size: 1000,
+            pushed_at: "2026-05-18T00:00:00Z",
+            created_at: "2020-01-01T00:00:00Z",
+            updated_at: "2026-05-18T00:00:00Z"
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify([
+            {
+              id: 10,
+              number: 1,
+              title: "Bug",
+              body: null,
+              state: "open",
+              labels: [],
+              assignees: [],
+              created_at: "2026-05-01T00:00:00Z",
+              updated_at: "2026-05-02T00:00:00Z",
+              closed_at: null,
+              comments: 0
+            },
+            {
+              id: "bad-issue"
+            }
+          ]),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValue(new Response("missing", { status: 404 }));
+
+    await expect(fetchGitHubRepoSnapshot("vercel/next.js", { fetcher })).rejects.toThrow(
+      "GitHub issue payload was invalid for /repos/vercel/next.js/issues."
+    );
+  });
+
   it("treats missing optional content files as absent signals", async () => {
     const fetcher = vi
       .fn()

@@ -97,6 +97,20 @@ describe("fetchGitHubRepoSnapshot", () => {
     await expect(fetchGitHubRepoSnapshot("vercel/missing", { fetcher })).rejects.toBeInstanceOf(GitHubResponseError);
   });
 
+  it("wraps unreadable GitHub success payloads", async () => {
+    const unreadableResponse = Object.assign(new Response("{}", { status: 200 }), {
+      json: async () => {
+        throw new Error("bad body");
+      }
+    });
+    const fetcher = vi.fn().mockResolvedValue(unreadableResponse);
+
+    await expect(fetchGitHubRepoSnapshot("vercel/missing", { fetcher })).rejects.toMatchObject({
+      name: "GitHubResponseError",
+      message: "GitHub response payload was not readable for /repos/vercel/missing."
+    });
+  });
+
   it("treats missing optional content files as absent signals", async () => {
     const fetcher = vi
       .fn()

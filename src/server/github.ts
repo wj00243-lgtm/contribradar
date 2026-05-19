@@ -122,7 +122,7 @@ async function githubJson<T>(
     throw new GitHubResponseError(`GitHub request failed with status ${response.status} for ${path}.`);
   }
 
-  return response.json() as Promise<T>;
+  return readJsonResponse<T>(response, path);
 }
 
 async function fetchContentSignals(
@@ -195,7 +195,15 @@ async function optionalGithubJson<T>(
     throw new GitHubResponseError(`GitHub request failed with status ${response.status} for ${path}.`);
   }
 
-  return response.json() as Promise<T>;
+  return readJsonResponse<T>(response, path);
+}
+
+async function readJsonResponse<T>(response: Response, path: string): Promise<T> {
+  try {
+    return (await response.json()) as T;
+  } catch {
+    throw new GitHubResponseError(`GitHub response payload was not readable for ${path}.`);
+  }
 }
 
 function decodeContent(content: GitHubContentPayload | null): string {

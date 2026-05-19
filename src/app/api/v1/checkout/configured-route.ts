@@ -32,7 +32,7 @@ export function createConfiguredCheckoutPostHandler({
       client,
       stripe,
       priceId: process.env.STRIPE_PRICE_ID,
-      appUrl: process.env.NEXT_PUBLIC_APP_URL
+      appUrl: process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL
     })(request);
   };
 }

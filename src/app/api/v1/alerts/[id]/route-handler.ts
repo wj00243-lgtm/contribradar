@@ -29,8 +29,17 @@ export function createAlertPatchHandler({ auth: getSession, client, markAlertRea
     }
 
     const { id } = await context.params;
-    const body = (await request.json().catch(() => ({}))) as { isRead?: unknown };
-    const result = await updateAlert(client as AlertClient, userId, id, body.isRead === true);
+
+    let body: unknown;
+
+    try {
+      body = await request.json();
+    } catch {
+      return jsonError(400, "INVALID_JSON", "Request body must be valid JSON.");
+    }
+
+    const parsedBody = body as { isRead?: unknown };
+    const result = await updateAlert(client as AlertClient, userId, id, parsedBody.isRead === true);
 
     if (!result.updated) {
       return jsonError(404, "ALERT_NOT_FOUND", "Alert was not found for this user.");

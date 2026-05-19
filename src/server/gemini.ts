@@ -50,32 +50,38 @@ export async function generateJsonWithGemini<T>({
     throw new GeminiConfigurationError("GEMINI_API_KEY is required to generate AI recommendations.");
   }
 
-  const response = await fetcher(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-    {
-      method: "POST",
-      signal: AbortSignal.timeout(timeoutMs),
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: systemPrompt }]
+  let response: Response;
+
+  try {
+    response = await fetcher(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+      {
+        method: "POST",
+        signal: AbortSignal.timeout(timeoutMs),
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey
         },
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: userPrompt }]
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: systemPrompt }]
+          },
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: userPrompt }]
+            }
+          ],
+          generationConfig: {
+            temperature,
+            responseMimeType: "application/json"
           }
-        ],
-        generationConfig: {
-          temperature,
-          responseMimeType: "application/json"
-        }
-      })
-    }
-  );
+        })
+      }
+    );
+  } catch {
+    throw new GeminiResponseError("Gemini request failed before receiving a response.");
+  }
 
   if (!response.ok) {
     throw new GeminiResponseError(`Gemini request failed with status ${response.status}.`);

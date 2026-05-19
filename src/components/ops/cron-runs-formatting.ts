@@ -119,3 +119,38 @@ export function summarizeCronRuns(runs: CronRunView[]): CronRunSummary {
     }
   );
 }
+
+export function filterFailedAttempts(attempts: DeliveryAttemptView[]): DeliveryAttemptView[] {
+  return attempts.filter((attempt) => attempt.status === "failed");
+}
+
+export type AttemptCategories = {
+  sent: number;
+  failed: number;
+  skipped: number;
+  total: number;
+};
+
+export function categorizeAttempts(attempts: DeliveryAttemptView[]): AttemptCategories {
+  return attempts.reduce<AttemptCategories>(
+    (acc, attempt) => {
+      acc.total += 1;
+
+      if (attempt.status === "sent") {
+        acc.sent += 1;
+      } else if (attempt.status === "failed") {
+        acc.failed += 1;
+      } else if (attempt.status === "skipped") {
+        acc.skipped += 1;
+      }
+
+      return acc;
+    },
+    {
+      sent: 0,
+      failed: 0,
+      skipped: 0,
+      total: 0
+    }
+  );
+}

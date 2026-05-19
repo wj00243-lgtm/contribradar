@@ -1,18 +1,21 @@
 "use client";
 
-import { GitBranch, RefreshCw, ShieldCheck, UploadCloud } from "lucide-react";
+import { ChevronDown, GitBranch, RefreshCw, ShieldCheck, UploadCloud } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  categorizeAttempts,
+  filterFailedAttempts,
   formatDateTime,
   formatDuration,
   getRunStatusLabel,
   getRunStatusVariant,
   summarizeCronRuns,
-  type CronRunView
+  type CronRunView,
+  type DeliveryAttemptView
 } from "./cron-runs-formatting";
 import {
   formatIngestionSummary,
@@ -291,23 +294,62 @@ function MetricCard({ label, value }: { label: string; value: number }) {
 }
 
 function DeliveryAttempts({ attempts }: { attempts: CronRunView["attempts"] }) {
+  const [expanded, setExpanded] = useState(false);
+
   if (!attempts || attempts.length === 0) {
     return <span className="text-xs text-zinc-500">No attempts</span>;
   }
 
+  const failed = filterFailedAttempts(attempts);
+  const categories = categorizeAttempts(attempts);
+  const displayAttempts = expanded ? attempts : attempts.slice(0, 3);
+  const hasMore = attempts.length > 3;
+
   return (
     <div className="space-y-2">
-      {attempts.slice(0, 3).map((attempt, index) => (
-        <div key={`${attempt.alertId ?? "attempt"}-${index}`} className="rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={attempt.status === "failed" ? "destructive" : "secondary"}>{attempt.status}</Badge>
-            <span className="text-xs text-zinc-300">{attempt.channel}</span>
-            <span className="text-xs text-zinc-500">{attempt.attempts} tries</span>
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="gap-1">
+          <span className="text-xs">{categories.sent} sent</span>
+        </Badge>
+        {failed.length > 0 && (
+          <Badge variant="destructive" className="gap-1">
+            <span className="text-xs">{failed.length} failed</span>
+          </Badge>
+        )}
+        {categories.skipped > 0 && (
+          <Badge variant="secondary" className="gap-1">
+            <span className="text-xs">{categories.skipped} skipped</span>
+          </Badge>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        {displayAttempts.map((attempt, index) => (
+          <div
+            key={`${attempt.alertId ?? "attempt"}-${index}`}
+            className="rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={attempt.status === "failed" ? "destructive" : "secondary"}>{attempt.status}</Badge>
+              <span className="text-xs text-zinc-300">{attempt.channel}</span>
+              <span className="text-xs text-zinc-500">{attempt.attempts} tries</span>
+            </div>
+            {attempt.error || attempt.reason ? (
+              <p className="mt-2 text-xs text-zinc-400">{attempt.error ?? attempt.reason}</p>
+            ) : null}
           </div>
-          {attempt.error || attempt.reason ? <p className="mt-2 text-xs text-zinc-400">{attempt.error ?? attempt.reason}</p> : null}
-        </div>
-      ))}
-      {attempts.length > 3 ? <p className="text-xs text-zinc-500">+{attempts.length - 3} more attempts</p> : null}
+        ))}
+      </div>
+
+      {hasMore && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-300 transition"
+        >
+          <ChevronDown className={`h-3 w-3 transition ${expanded ? "rotate-180" : ""}`} />
+          {expanded ? "Show less" : `Show ${attempts.length - 3} more`}
+        </button>
+      )}
     </div>
   );
 }

@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  categorizeAttempts,
+  filterFailedAttempts,
   formatDateTime,
   formatDuration,
   getRunStatusLabel,
   getRunStatusVariant,
   summarizeCronRuns,
-  type CronRunView
+  type CronRunView,
+  type DeliveryAttemptView
 } from "./cron-runs-formatting";
 
 describe("cron run formatting", () => {
@@ -73,5 +76,38 @@ describe("cron run formatting", () => {
       deliveryAttempts: 2,
       deliveryFailures: 1
     });
+  });
+
+  it("filters failed delivery attempts from a list", () => {
+    const attempts: DeliveryAttemptView[] = [
+      { channel: "email", status: "sent", attempts: 1 },
+      { channel: "slack", status: "failed", attempts: 3, error: "timeout" },
+      { channel: "email", status: "skipped", attempts: 0 },
+      { channel: "slack", status: "failed", attempts: 2, error: "network error" }
+    ];
+
+    const failed = filterFailedAttempts(attempts);
+
+    expect(failed).toHaveLength(2);
+    expect(failed.every((a) => a.status === "failed")).toBe(true);
+    expect(failed[0].error).toBe("timeout");
+    expect(failed[1].error).toBe("network error");
+  });
+
+  it("categorizes delivery attempts by status", () => {
+    const attempts: DeliveryAttemptView[] = [
+      { channel: "email", status: "sent", attempts: 1 },
+      { channel: "slack", status: "failed", attempts: 2, error: "timeout" },
+      { channel: "email", status: "skipped", attempts: 0, reason: "not configured" },
+      { channel: "slack", status: "failed", attempts: 3, error: "network" },
+      { channel: "email", status: "sent", attempts: 1, providerId: "email_456" }
+    ];
+
+    const categories = categorizeAttempts(attempts);
+
+    expect(categories.sent).toBe(2);
+    expect(categories.failed).toBe(2);
+    expect(categories.skipped).toBe(1);
+    expect(categories.total).toBe(5);
   });
 });

@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { StripeConfigurationError } from "@/server/stripe";
+import type { PrismaClient } from "@prisma/client";
+import { createConfiguredBillingPortalPostHandler } from "./configured-route";
 import { createBillingPortalPostHandler } from "./route-handler";
 import type Stripe from "stripe";
 
@@ -7,6 +10,20 @@ function request() {
 }
 
 describe("POST /api/v1/billing-portal", () => {
+  it("returns 503 when Stripe is not configured in the route wiring", async () => {
+    const POST = createConfiguredBillingPortalPostHandler({
+      client: {} as PrismaClient,
+      stripeFactory: () => {
+        throw new StripeConfigurationError("Stripe is not configured.");
+      }
+    });
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({ error: "Stripe is not configured" });
+  });
+
   it("returns 401 when no session is present", async () => {
     const POST = createBillingPortalPostHandler({
       auth: vi.fn().mockResolvedValue(null),

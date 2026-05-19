@@ -106,4 +106,19 @@ describe("createResendEmailAdapter", () => {
 
     await expect(adapter.send(payload)).rejects.toThrow("Resend email delivery failed: unexpected error (Unexpected issue)");
   });
+
+  it("treats invalid success payloads as sent without a provider id", async () => {
+    const adapter = createResendEmailAdapter({
+      apiKey: "resend_key",
+      from: "alerts@example.com",
+      fetch: vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => {
+          throw new Error("invalid json");
+        }
+      })
+    });
+
+    await expect(adapter.send(payload)).resolves.toEqual({ status: "sent" });
+  });
 });

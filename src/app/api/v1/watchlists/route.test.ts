@@ -35,6 +35,13 @@ function postRequest(body: unknown) {
   });
 }
 
+function invalidJsonRequest() {
+  return new Request("http://localhost/api/v1/watchlists", {
+    method: "POST",
+    body: "{"
+  });
+}
+
 describe("POST /api/v1/watchlists", () => {
   it("rejects anonymous watchlist creation before reading the body", async () => {
     const createWatchlist = vi.fn();
@@ -89,6 +96,28 @@ describe("POST /api/v1/watchlists", () => {
         userPlan: "pro"
       }
     );
+  });
+
+  it("returns 400 when the watchlist body is invalid JSON", async () => {
+    const createWatchlist = vi.fn();
+    const POST = createWatchlistsPostHandler({
+      auth: async () => ({
+        user: {
+          id: "user_session",
+          plan: "free"
+        }
+      }),
+      client: {},
+      createWatchlist,
+      ensureUser: vi.fn()
+    });
+
+    const response = await POST(invalidJsonRequest());
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe("INVALID_JSON");
+    expect(createWatchlist).not.toHaveBeenCalled();
   });
 
   it("ensures the OAuth session user exists before creating the watchlist", async () => {

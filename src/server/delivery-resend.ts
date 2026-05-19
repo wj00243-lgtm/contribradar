@@ -58,7 +58,7 @@ export function createResendEmailAdapter({
           throw new Error(`Resend email delivery failed with ${response.status}: ${body}`);
         }
 
-        const body = response.json ? await response.json() : {};
+        const body = response.json ? await parseResponseJson(response.json) : {};
         const providerId = body && typeof body === "object" && "id" in body && typeof body.id === "string" ? body.id : undefined;
 
         return {
@@ -86,4 +86,12 @@ export function createResendEmailAdapter({
       }
     }
   };
+}
+
+async function parseResponseJson(json: () => Promise<unknown>): Promise<unknown> {
+  try {
+    return await json();
+  } catch {
+    return {};
+  }
 }

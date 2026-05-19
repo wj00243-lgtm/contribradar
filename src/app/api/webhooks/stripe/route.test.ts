@@ -117,6 +117,49 @@ describe("POST /api/webhooks/stripe", () => {
     expect(mockClient.$transaction).toHaveBeenCalledOnce();
   });
 
+  it("returns 400 when a subscription event payload is malformed", async () => {
+    const mockEvent = {
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: "",
+          status: "active",
+          current_period_end: "not-a-number",
+          cancel_at_period_end: false,
+          items: { data: [{ price: { id: "price_123" } }] }
+        }
+      }
+    };
+
+    const mockStripe = {
+      webhooks: {
+        constructEvent: vi.fn().mockReturnValue(mockEvent)
+      }
+    };
+
+    const POST = createStripeWebhookPostHandler({
+      client: {
+        subscription: {
+          findUnique: vi.fn(),
+          update: vi.fn()
+        },
+        userSettings: {
+          findUnique: vi.fn()
+        },
+        user: {
+          update: vi.fn()
+        }
+      },
+      stripe: mockStripe as unknown as Stripe,
+      webhookSecret: "secret"
+    });
+
+    const response = await POST(request("{}", "valid_sig"));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "Invalid subscription payload" });
+  });
+
   it("downgrades user to free when subscription is deleted and they are not lifetime beta", async () => {
     const mockEvent = {
       type: "customer.subscription.deleted",

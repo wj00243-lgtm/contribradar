@@ -32,12 +32,19 @@ export function createStripeWebhookPostHandler({ client, stripe, webhookSecret }
     try {
       switch (event.type) {
         case "checkout.session.completed": {
-          const session = event.data.object as Stripe.Checkout.Session;
+          const session = parseCheckoutSession(event.data.object);
+
+          if (!session) {
+            return NextResponse.json({ error: "Invalid checkout session payload" }, { status: 400 });
+          }
           
           if (session.mode === "subscription" && session.client_reference_id) {
             const userId = session.client_reference_id;
-            const customerId = session.customer as string;
-            const subscriptionId = session.subscription as string;
+            const customerId = typeof session.customer === "string" ? session.customer : "";
+            const subscriptionId = typeof session.subscription === "string" ? session.subscription : "";
+            if (!customerId || !subscriptionId) {
+              return NextResponse.json({ error: "Invalid checkout session payload" }, { status: 400 });
+            }
             
             const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
 
@@ -74,7 +81,11 @@ export function createStripeWebhookPostHandler({ client, stripe, webhookSecret }
 
         case "customer.subscription.updated":
         case "customer.subscription.deleted": {
-          const subscription = event.data.object as any;
+          const subscription = parseSubscription(event.data.object);
+
+          if (!subscription) {
+            return NextResponse.json({ error: "Invalid subscription payload" }, { status: 400 });
+          }
           
           const subRecord = await client.subscription.findUnique({
             where: { stripeSubscriptionId: subscription.id }
@@ -128,5 +139,56 @@ export function createStripeWebhookPostHandler({ client, stripe, webhookSecret }
       console.error("Webhook processing error:", error);
       return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
     }
+  };
+}
+
+function parseCheckoutSession(value: unknown): Stripe.Checkout.Session | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const session = value as Partial<Stripe.Checkout.Session>;
+
+  if (session.mode !== "subscription" && session.mode !== "payment" && session.mode !== undefined) {
+    return null;
+  }
+
+  return session as Stripe.Checkout.Session;
+}
+
+function parseSubscription(value: unknown): {
+  id: string;
+  status: Stripe.Subscription.Status;
+  current_period_end: number;
+  cancel_at_period_end: boolean;
+  items: { data: Array<{ price: { id: string } }> };
+} | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const subscription = value as Partial<Stripe.Subscription> & {
+    current_period_end?: unknown;
+  };
+
+  if (
+    typeof subscription.id !== "string" ||
+    subscription.id.trim().length === 0 ||
+    typeof subscription.status !== "string" ||
+    typeof subscription.current_period_end !== "number" ||
+    !Number.isFinite(subscription.current_period_end) ||
+    typeof subscription.cancel_at_period_end !== "boolean" ||
+    !subscription.items ||
+    !Array.isArray(subscription.items.data)
+  ) {
+    return null;
+  }
+
+  return subscription as {
+    id: string;
+    status: Stripe.Subscription.Status;
+    current_period_end: number;
+    cancel_at_period_end: boolean;
+    items: { data: Array<{ price: { id: string } }> };
   };
 }

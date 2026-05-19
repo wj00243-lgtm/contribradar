@@ -94,6 +94,65 @@ describe("createWatchlistInDb", () => {
     expect(result.status).toBe(403);
     expect(result.error?.code).toBe("FREE_WATCHLIST_LIMIT_REACHED");
   });
+
+  it("normalizes malformed filter JSON before querying repositories", async () => {
+    const create = vi.fn().mockResolvedValue({
+      id: "watchlist_1",
+      userId: "user_1",
+      name: "Targets",
+      description: "",
+      filters: {
+        languages: ["TypeScript"],
+        topics: ["cli"],
+        minScore: 100,
+        hasGoodFirstIssue: true
+      },
+      alertEnabled: false,
+      digestFrequency: "weekly",
+      createdAt: new Date("2026-05-10T00:00:00Z"),
+      repos: []
+    });
+    const findMany = vi.fn().mockResolvedValue([]);
+    const client = {
+      watchlist: {
+        count: vi.fn().mockResolvedValue(0),
+        create
+      },
+      repository: {
+        findMany
+      }
+    };
+
+    await createWatchlistInDb(client, {
+      userId: "user_1",
+      userPlan: "pro",
+      name: "Targets",
+      description: "",
+      filters: {
+        languages: [" TypeScript ", "", "TypeScript", 42] as unknown as string[],
+        topics: [" cli ", "cli", null] as unknown as string[],
+        minScore: 150,
+        hasGoodFirstIssue: true
+      },
+      alertEnabled: false,
+      digestFrequency: "weekly"
+    });
+
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        language: { in: ["TypeScript"] },
+        AND: [{ topics: { array_contains: "cli" } }],
+        readinessScore: { gte: 100 },
+        issues: { some: { state: "open", labels: { array_contains: "good first issue" } } }
+      }
+    }));
+    expect(create.mock.calls[0][0].data.filters).toEqual({
+      languages: ["TypeScript"],
+      topics: ["cli"],
+      minScore: 100,
+      hasGoodFirstIssue: true
+    });
+  });
 });
 
 describe("getWatchlistReposFromDb", () => {
@@ -131,6 +190,39 @@ describe("getWatchlistReposFromDb", () => {
     await expect(getWatchlistReposFromDb(client, "missing", "user_1")).resolves.toMatchObject({
       status: 404,
       error: { code: "WATCHLIST_NOT_FOUND" }
+    });
+  });
+
+  it("normalizes persisted malformed filter JSON on read", async () => {
+    const client = {
+      watchlist: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: "watchlist_1",
+          userId: "user_1",
+          name: "Targets",
+          description: "",
+          filters: {
+            languages: [" TypeScript ", "TypeScript", false],
+            topics: [" cli ", "", "cli"],
+            minScore: -25,
+            hasGoodFirstIssue: true
+          },
+          alertEnabled: false,
+          digestFrequency: "weekly",
+          createdAt: new Date("2026-05-10T00:00:00Z"),
+          repos: []
+        })
+      }
+    };
+
+    const result = await getWatchlistReposFromDb(client, "watchlist_1", "user_1");
+
+    expect(result.status).toBe(200);
+    expect(result.data?.watchlist.filters).toEqual({
+      languages: ["TypeScript"],
+      topics: ["cli"],
+      minScore: 0,
+      hasGoodFirstIssue: true
     });
   });
 });

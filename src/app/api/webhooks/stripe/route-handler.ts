@@ -47,6 +47,11 @@ export function createStripeWebhookPostHandler({ client, stripe, webhookSecret }
             }
             
             const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
+            const normalizedSubscription = parseRetrievedSubscription(subscription);
+
+            if (!normalizedSubscription) {
+              return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
+            }
 
             await client.$transaction([
               client.user.update({
@@ -60,18 +65,18 @@ export function createStripeWebhookPostHandler({ client, stripe, webhookSecret }
                 where: { userId },
                 create: {
                   userId,
-                  stripeSubscriptionId: subscription.id,
-                  stripePriceId: subscription.items.data[0]?.price.id ?? "unknown",
-                  status: subscription.status,
-                  currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-                  cancelAtPeriodEnd: subscription.cancel_at_period_end
+                  stripeSubscriptionId: normalizedSubscription.id,
+                  stripePriceId: normalizedSubscription.items.data[0]?.price.id ?? "unknown",
+                  status: normalizedSubscription.status,
+                  currentPeriodEnd: new Date(normalizedSubscription.current_period_end * 1000),
+                  cancelAtPeriodEnd: normalizedSubscription.cancel_at_period_end
                 },
                 update: {
-                  stripeSubscriptionId: subscription.id,
-                  stripePriceId: subscription.items.data[0]?.price.id ?? "unknown",
-                  status: subscription.status,
-                  currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-                  cancelAtPeriodEnd: subscription.cancel_at_period_end
+                  stripeSubscriptionId: normalizedSubscription.id,
+                  stripePriceId: normalizedSubscription.items.data[0]?.price.id ?? "unknown",
+                  status: normalizedSubscription.status,
+                  currentPeriodEnd: new Date(normalizedSubscription.current_period_end * 1000),
+                  cancelAtPeriodEnd: normalizedSubscription.cancel_at_period_end
                 }
               })
             ]);
@@ -187,6 +192,51 @@ function parseSubscription(value: unknown): {
   return subscription as {
     id: string;
     status: Stripe.Subscription.Status;
+    current_period_end: number;
+    cancel_at_period_end: boolean;
+    items: { data: Array<{ price: { id: string } }> };
+  };
+}
+
+function parseRetrievedSubscription(value: unknown): {
+  id: string;
+  status: string;
+  current_period_end: number;
+  cancel_at_period_end: boolean;
+  items: { data: Array<{ price: { id: string } }> };
+} | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const subscription = value as {
+    id?: unknown;
+    status?: unknown;
+    current_period_end?: unknown;
+    cancel_at_period_end?: unknown;
+    items?: { data?: Array<{ price?: { id?: unknown } }> };
+  };
+
+  if (
+    typeof subscription.id !== "string" ||
+    subscription.id.trim().length === 0 ||
+    typeof subscription.status !== "string" ||
+    typeof subscription.current_period_end !== "number" ||
+    !Number.isFinite(subscription.current_period_end) ||
+    typeof subscription.cancel_at_period_end !== "boolean" ||
+    !subscription.items ||
+    !Array.isArray(subscription.items.data) ||
+    !subscription.items.data[0] ||
+    !subscription.items.data[0].price ||
+    typeof subscription.items.data[0].price.id !== "string" ||
+    subscription.items.data[0].price.id.trim().length === 0
+  ) {
+    return null;
+  }
+
+  return subscription as {
+    id: string;
+    status: string;
     current_period_end: number;
     cancel_at_period_end: boolean;
     items: { data: Array<{ price: { id: string } }> };

@@ -117,6 +117,53 @@ describe("POST /api/webhooks/stripe", () => {
     expect(mockClient.$transaction).toHaveBeenCalledOnce();
   });
 
+  it("returns 500 when the retrieved Stripe subscription is malformed", async () => {
+    const mockEvent = {
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          mode: "subscription",
+          client_reference_id: "user_1",
+          customer: "cus_123",
+          subscription: "sub_123"
+        }
+      }
+    };
+
+    const mockStripe = {
+      webhooks: {
+        constructEvent: vi.fn().mockReturnValue(mockEvent)
+      },
+      subscriptions: {
+        retrieve: vi.fn().mockResolvedValue({
+          id: "",
+          status: "active",
+          current_period_end: 1600000000,
+          cancel_at_period_end: false,
+          items: { data: [{ price: { id: "price_123" } }] }
+        })
+      }
+    };
+
+    const mockClient = {
+      $transaction: vi.fn(),
+      user: { update: vi.fn() },
+      subscription: { upsert: vi.fn() }
+    };
+
+    const POST = createStripeWebhookPostHandler({
+      client: mockClient,
+      stripe: mockStripe as unknown as Stripe,
+      webhookSecret: "secret"
+    });
+
+    const response = await POST(request("{}", "valid_sig"));
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({ error: "Webhook handler failed" });
+    expect(mockClient.$transaction).not.toHaveBeenCalled();
+  });
+
   it("returns 400 when a subscription event payload is malformed", async () => {
     const mockEvent = {
       type: "customer.subscription.updated",

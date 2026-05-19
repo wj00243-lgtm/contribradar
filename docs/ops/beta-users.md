@@ -57,7 +57,12 @@ bun run ops:user:plan -- --user="<github_id-or-email-or-user-id>" --plan=free --
 
 The script uses Prisma field names (`githubId`, `displayName`) instead of raw SQL column names and refuses ambiguous matches. Use the exact user id if more than one user matches.
 
-To reset AI recommendation usage for a beta user, use the production database console and delete the matching `usage_logs` row for feature `ai_recommendation`.
+Reset AI recommendation usage for a beta user:
+
+```powershell
+bun run ops:ai:reset -- --user="<github_id-or-email-or-user-id>"
+bun run ops:ai:reset -- --user="<github_id-or-email-or-user-id>" --apply
+```
 
 ## Feedback Loop
 

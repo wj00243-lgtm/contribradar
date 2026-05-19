@@ -66,6 +66,8 @@ Reset after test:
 
 ```powershell
 bun run ops:user:quota -- --user="<email-or-github-id-or-user-id>" --ai-quota=20 --apply
+bun run ops:ai:reset -- --user="<email-or-github-id-or-user-id>"
+bun run ops:ai:reset -- --user="<email-or-github-id-or-user-id>" --apply
 ```
 
 ## Error Checks

@@ -40,7 +40,7 @@ export function createSlackWebhookAdapter({
         });
 
         if (!response.ok) {
-          const body = response.text ? await response.text() : "";
+          const body = response.text ? await readResponseText(response.text) : "";
           throw new Error(`Slack webhook delivery failed with ${response.status}: ${body}`);
         }
 
@@ -68,4 +68,12 @@ export function createSlackWebhookAdapter({
       }
     }
   };
+}
+
+async function readResponseText(text: () => Promise<string>): Promise<string> {
+  try {
+    return await text();
+  } catch {
+    return "";
+  }
 }

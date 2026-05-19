@@ -22,12 +22,14 @@ export function createCheckoutPostHandler({ auth, client, stripe, priceId, appUr
         return NextResponse.json({ error: "STRIPE_PRICE_ID is not configured" }, { status: 503 });
       }
 
+      if (!appUrl) {
+        return NextResponse.json({ error: "APP_URL is not configured" }, { status: 503 });
+      }
+
       const dbUser = await client.user.findUnique({
         where: { id: session.user.id },
         select: { stripeCustomerId: true, email: true }
       });
-
-      const baseUrl = appUrl || "http://localhost:3000";
 
       const checkoutSession = await stripe.checkout.sessions.create({
         mode: "subscription",
@@ -40,8 +42,8 @@ export function createCheckoutPostHandler({ auth, client, stripe, priceId, appUr
             quantity: 1,
           },
         ],
-        success_url: `${baseUrl}/?success=true`,
-        cancel_url: `${baseUrl}/pricing?canceled=true`,
+        success_url: `${appUrl}/?success=true`,
+        cancel_url: `${appUrl}/pricing?canceled=true`,
       });
 
       return NextResponse.json({ url: checkoutSession.url });

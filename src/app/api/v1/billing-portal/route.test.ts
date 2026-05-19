@@ -144,11 +144,34 @@ describe("POST /api/v1/billing-portal", () => {
     const POST = createBillingPortalPostHandler({
       auth: vi.fn().mockResolvedValue({ user: { id: "user_1" } }),
       client: mockClient,
-      stripe: {} as Stripe
+      stripe: {} as Stripe,
+      appUrl: "http://localhost:3000"
     });
 
     const response = await POST(request());
     expect(response.status).toBe(404);
+  });
+
+  it("returns 503 and skips Stripe when the app URL is not configured", async () => {
+    const mockStripe = {
+      billingPortal: {
+        sessions: {
+          create: vi.fn()
+        }
+      }
+    };
+
+    const POST = createBillingPortalPostHandler({
+      auth: vi.fn().mockResolvedValue({ user: { id: "user_1" } }),
+      client: {},
+      stripe: mockStripe as unknown as Stripe
+    });
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({ error: "APP_URL is not configured" });
+    expect(mockStripe.billingPortal.sessions.create).not.toHaveBeenCalled();
   });
 
   it("returns 200 and a portal URL for a valid user with a stripe customer id", async () => {

@@ -17,6 +17,10 @@ export function createBillingPortalPostHandler({ auth, client, stripe, appUrl }:
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
 
+      if (!appUrl) {
+        return NextResponse.json({ error: "APP_URL is not configured" }, { status: 503 });
+      }
+
       const dbUser = await client.user.findUnique({
         where: { id: session.user.id },
         select: { stripeCustomerId: true }
@@ -25,12 +29,10 @@ export function createBillingPortalPostHandler({ auth, client, stripe, appUrl }:
       if (!dbUser?.stripeCustomerId) {
         return NextResponse.json({ error: "No billing record found" }, { status: 404 });
       }
-
-      const baseUrl = appUrl || "http://localhost:3000";
       
       const portalSession = await stripe.billingPortal.sessions.create({
         customer: dbUser.stripeCustomerId,
-        return_url: `${baseUrl}/`,
+        return_url: `${appUrl}/`,
       });
 
       return NextResponse.json({ url: portalSession.url });
